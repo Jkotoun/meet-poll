@@ -1,6 +1,7 @@
 {
   "name": "meet-poll",
   "private": true,
+  "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
@@ -9,5 +10,5 @@
   "devDependencies": {
     "turbo": "^2.3.0"
   },
-  "packageManager": "pnpm@12.4.1"
+  "packageManager": "bun@1.4.2"
 }
