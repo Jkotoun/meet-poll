@@ -15,8 +15,8 @@ surfaces the slot where the most people can attend.
 - PostgreSQL via MikroORM, behind a repository/ports-and-adapters layer *(planned)*
 
 **Shared tooling**
-- [Bun](https://bun.sh/) as the JS runtime for both apps
-- [pnpm](https://pnpm.io/) workspaces + [Turborepo](https://turborepo.com/) for the monorepo
+- [Bun](https://bun.sh/) as the runtime and package manager for both apps
+- Bun workspaces + [Turborepo](https://turborepo.com/) for the monorepo
 - [oxlint](https://oxc.rs/) + [oxfmt](https://oxc.rs/) for linting/formatting
 - `bun test` for the backend test suite
 
@@ -27,16 +27,16 @@ surfaces the slot where the most people can attend.
 
 ## Running locally
 
-Requires [Bun](https://bun.sh/) and [pnpm](https://pnpm.io/) installed.
+Requires [Bun](https://bun.sh/) installed.
 
 ```bash
-pnpm install
+bun install
 
 # backend — http://localhost:3000
-pnpm --filter backend run start:dev
+bun run --filter backend start:dev
 
 # frontend — also defaults to :3000, run on another port if both are up:
-pnpm --filter frontend run dev -- -p 3001
+bun run --filter frontend dev -- -p 3001
 ```
 
 There's no database wired up yet, so the backend currently runs without any
