@@ -4,11 +4,6 @@ A Doodle-style scheduling-poll app: an organizer proposes candidate meeting
 times, invitees vote **Yes / No / If-need-be** on each one, and the app
 surfaces the slot where the most people can attend.
 
-Built as a complete, portfolio-shaped full-stack project, not a toy example.
-
-> **Status: early scaffold.** Domain logic, persistence, and infra aren't
-> built yet — see below for what's actually running today vs. planned.
-
 ## Tech stack
 
 **Frontend** — `apps/frontend`
@@ -47,9 +42,3 @@ pnpm --filter frontend run dev -- -p 3001
 There's no database wired up yet, so the backend currently runs without any
 external dependency. A `docker-compose.yml` for local Postgres will be added
 once the persistence layer lands.
-
-## Project history
-
-This project's planning docs (`PLAN.md`, `DECISIONS.md`) and agent working
-agreement (`CLAUDE.md`) live in the repo but aren't committed yet — ask the
-owner if you need them.
