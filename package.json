@@ -5,7 +5,10 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "lint": "turbo run lint"
+    "dev:be": "turbo run dev --filter=backend",
+    "dev:fe": "turbo run dev --filter=frontend",
+    "lint": "turbo run lint",
+    "test": "turbo run test"
   },
   "devDependencies": {
     "turbo": "^2.3.0"

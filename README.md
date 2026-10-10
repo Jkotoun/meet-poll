@@ -33,10 +33,10 @@ Requires [Bun](https://bun.sh/) installed.
 bun install
 
 # backend — http://localhost:3000
-bun run --filter backend start:dev
+bun run dev:be
 
 # frontend — also defaults to :3000, run on another port if both are up:
-bun run --filter frontend dev -- -p 3001
+bun run dev:fe -- -p 3001
 ```
 
 There's no database wired up yet, so the backend currently runs without any
