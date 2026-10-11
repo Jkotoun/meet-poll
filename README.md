@@ -1,4 +1,4 @@
-# Meet Poll
+# Meet Poll - WIP
 
 A Doodle-style scheduling-poll app: an organizer proposes candidate meeting
 times, invitees vote **Yes / No / If-need-be** on each one, and the app
