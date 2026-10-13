@@ -66,6 +66,7 @@ jobs:
               - turbo.json
               - .dockerignore
               - .github/workflows/ci.yml
+              - .github/actions/build-image/**
             # turbo prune validates the lockfile against every workspace.
             backend:
               - *shared
@@ -94,15 +95,11 @@ jobs:
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v7
-      - name: 🐳 Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
       - name: 🏗️ Build image
-        uses: docker/build-push-action@v7
+        uses: ./.github/actions/build-image
         with:
-          context: .
-          file: apps/backend/Dockerfile
-          cache-from: type=gha,scope=backend
-          cache-to: type=gha,mode=max,scope=backend
+          app: backend
+          push: false
 
   frontend-image:
     name: Frontend image
@@ -113,15 +110,11 @@ jobs:
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v7
-      - name: 🐳 Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
       - name: 🏗️ Build image
-        uses: docker/build-push-action@v7
+        uses: ./.github/actions/build-image
         with:
-          context: .
-          file: apps/frontend/Dockerfile
-          cache-from: type=gha,scope=frontend
-          cache-to: type=gha,mode=max,scope=frontend
+          app: frontend
+          push: false
 
   terraform-check:
     name: Terraform check (${{ matrix.stack }})
