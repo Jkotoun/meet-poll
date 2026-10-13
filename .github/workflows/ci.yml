@@ -36,3 +36,52 @@ jobs:
           restore-keys: ${{ runner.os }}-turbo-
       - name: ✅ Build, lint, typecheck and test
         run: bunx turbo run build lint typecheck test test:e2e
+
+  # Job-level filter: a skipped job passes required checks, a skipped workflow doesn't.
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v7
+      - name: 🔎 Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v4
+        with:
+          # On push, diff against the branch's previous commit.
+          base: ${{ github.event_name == 'push' && github.ref || '' }}
+          filters: |
+            backend:
+              - apps/backend/**
+              # turbo prune validates the lockfile against every workspace.
+              - apps/frontend/package.json
+              - packages/**
+              - package.json
+              - bun.lock
+              - turbo.json
+              - .dockerignore
+              - .github/workflows/ci.yml
+
+  backend-image:
+    name: Backend image
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v7
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: 🏗️ Build image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/backend/Dockerfile
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
