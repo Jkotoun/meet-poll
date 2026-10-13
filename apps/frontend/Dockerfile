@@ -1,13 +1,9 @@
-# Build context is the repo root: docker build -f apps/frontend/Dockerfile .
-# CI passes BUN_VERSION from package.json's packageManager; the default is
-# only for local builds.
-ARG BUN_VERSION=1.4.2
-
-FROM oven/bun:${BUN_VERSION}-slim AS base
+# Build from the repo root: docker build -f apps/frontend/Dockerfile .
+# Keep the Bun version in sync with packageManager in package.json.
+FROM oven/bun:1.4.2-slim AS base
 WORKDIR /app
 
-# turbo prune isolates the frontend workspace with a pruned lockfile, so
-# backend-only dependency changes don't invalidate the install layer below.
+# Prune to the frontend workspace so backend dep changes don't bust the cache.
 FROM base AS prune
 COPY . .
 RUN bun install --frozen-lockfile --filter meet-poll
@@ -20,8 +16,7 @@ COPY --from=prune /app/out/full/ .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN bunx turbo run build --filter=frontend
 
-# The standalone output already contains the traced production dependencies,
-# so the runtime stage needs no install step.
+# Standalone output already bundles its prod deps.
 FROM base AS runtime
 ENV PORT=8080
 # server.js binds to $HOSTNAME, which Docker sets to the container id.
@@ -29,8 +24,7 @@ ENV HOSTNAME=0.0.0.0
 COPY --from=build /app/apps/frontend/.next/standalone ./
 COPY --from=build /app/apps/frontend/.next/static ./apps/frontend/.next/static
 COPY --from=build /app/apps/frontend/public ./apps/frontend/public
-# Next writes its ISR and image caches under .next/; only that directory is
-# writable by the runtime user, server.js and node_modules stay root-owned.
+# Only .next/ (Next's runtime caches) is writable by the app user.
 RUN chown -R bun:bun apps/frontend/.next
 USER bun
 EXPOSE 8080

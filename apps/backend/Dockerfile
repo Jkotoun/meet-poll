@@ -1,13 +1,9 @@
-# Build context is the repo root: docker build -f apps/backend/Dockerfile .
-# CI passes BUN_VERSION from package.json's packageManager; the default is
-# only for local builds.
-ARG BUN_VERSION=1.4.2
-
-FROM oven/bun:${BUN_VERSION}-slim AS base
+# Build from the repo root: docker build -f apps/backend/Dockerfile .
+# Keep the Bun version in sync with packageManager in package.json.
+FROM oven/bun:1.4.2-slim AS base
 WORKDIR /app
 
-# turbo prune isolates the backend workspace with a pruned lockfile, so
-# frontend-only dependency changes don't invalidate the install layers below.
+# Prune to the backend workspace so frontend dep changes don't bust the cache.
 FROM base AS prune
 COPY . .
 RUN bun install --frozen-lockfile --filter meet-poll
