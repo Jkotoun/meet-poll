@@ -29,6 +29,5 @@
     "oxlint-tsgolint": "^7.0.2003",
     "tailwindcss": "^4.3.3",
     "typescript": "^5"
-  },
-  "packageManager": "pnpm@12.4.1"
+  }
 }
