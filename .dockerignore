@@ -1,0 +1,13 @@
+.git
+.github
+.idea
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+!**/.env.example
+out
+**/*.md
