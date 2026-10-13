@@ -42,9 +42,7 @@ jobs:
   terraform-plan:
     name: Terraform plan
     needs: guard
-    # vars.GCP_WIF_PROVIDER is empty until infra/bootstrap is applied by hand;
-    # that condition is temporary (ROADMAP 1.8).
-    if: needs.guard.outputs.is_tip == 'true' && vars.GCP_WIF_PROVIDER != ''
+    if: needs.guard.outputs.is_tip == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
