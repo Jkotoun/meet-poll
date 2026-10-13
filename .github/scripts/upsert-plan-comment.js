@@ -1,26 +1,20 @@
 const fs = require('fs');
+const { formatPlan } = require('./plan-markdown.js');
 
 const MARKER = '<!-- terraform-plan:infra/main -->';
-const MAX_PLAN_LENGTH = 60000;
 
 function readPlan(planFile) {
   if (!fs.existsSync(planFile)) {
     return 'Plan failed — see the job log.';
   }
-  const plan = fs.readFileSync(planFile, 'utf8');
-  if (plan.length <= MAX_PLAN_LENGTH) {
-    return plan;
-  }
-  return `${plan.slice(0, MAX_PLAN_LENGTH)}\n… truncated, see the job log`;
+  return fs.readFileSync(planFile, 'utf8');
 }
 
 function renderComment(plan, sha) {
   return [
     MARKER,
     `### Terraform plan — \`infra/main\` (${sha.slice(0, 7)})`,
-    '```',
-    plan,
-    '```',
+    formatPlan(plan),
   ].join('\n');
 }
 
