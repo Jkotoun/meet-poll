@@ -129,3 +129,104 @@ jobs:
           path: infra/main
       - name: 🚀 Apply
         run: terraform apply -input=false tfplan
+
+  changed-apps:
+    needs: [terraform-plan, terraform-apply]
+    # After infra is applied (or there was nothing to apply), so new infra
+    # exists before code that relies on it; never after a failed plan/apply.
+    if: >-
+      !cancelled()
+      && needs.terraform-plan.result == 'success'
+      && contains(fromJSON('["success", "skipped"]'), needs.terraform-apply.result)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      apps: ${{ steps.check.outputs.apps }}
+    steps:
+      # Full history: changes are diffed against the commit each service serves.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SA }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - id: check
+        run: |
+          apps=$(.github/scripts/changed-apps.sh "${{ vars.GCP_REGION }}" backend frontend)
+          echo "apps=$apps" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: changed-apps
+    if: needs.changed-apps.outputs.apps != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.changed-apps.outputs.apps) }}
+    env:
+      REGION: ${{ vars.GCP_REGION }}
+      SERVICE: meet-poll-${{ matrix.app }}
+      IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/meet-poll/${{ matrix.app }}:${{ github.sha }}
+      HEALTH_PATH: ${{ matrix.app == 'backend' && '/health' || '/' }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SA }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - run: gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
+      - uses: ./.github/actions/build-image
+        with:
+          app: ${{ matrix.app }}
+          tags: ${{ env.IMAGE }}
+          push: true
+
+      # No --tag/--revision-suffix on deploy: with either, gcloud names the
+      # revision client-side into the service template, which Terraform would
+      # then resend on its next template change (409, name already exists).
+      # Tagging separately keeps revision naming server-side.
+      - name: Deploy candidate revision (no traffic)
+        id: deploy
+        run: |
+          gcloud run deploy "$SERVICE" --region "$REGION" --image "$IMAGE" --no-traffic --quiet
+          revision=$(gcloud run services describe "$SERVICE" --region "$REGION" \
+            --format='value(status.latestCreatedRevisionName)')
+          echo "revision=$revision" >> "$GITHUB_OUTPUT"
+
+      # A stable public URL for the candidate, used only by the smoke test.
+      - name: Tag candidate
+        id: candidate
+        run: |
+          gcloud run services update-traffic "$SERVICE" --region "$REGION" \
+            --set-tags "candidate=${{ steps.deploy.outputs.revision }}" --quiet
+          url=$(gcloud run services describe "$SERVICE" --region "$REGION" --format=json |
+            jq -er '.status.traffic[] | select(.tag == "candidate") | .url')
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test candidate
+        run: .github/scripts/smoke-test-url.sh "${{ steps.candidate.outputs.url }}" "$HEALTH_PATH"
+
+      # Exactly the tested revision, not "latest": a revision created in the
+      # meantime (e.g. by a Terraform apply) must never serve untested.
+      - name: Promote candidate
+        run: |
+          gcloud run services update-traffic "$SERVICE" --region "$REGION" \
+            --to-revisions "${{ steps.deploy.outputs.revision }}=100" --quiet
+
+      # The tagged URL is public; don't leave an untested or failed build
+      # reachable there — including on timeout or cancellation.
+      - name: Withdraw candidate
+        if: ${{ !success() && steps.deploy.outputs.revision != '' }}
+        run: |
+          gcloud run services update-traffic "$SERVICE" --region "$REGION" \
+            --remove-tags candidate --quiet || true
