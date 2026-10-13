@@ -7,20 +7,24 @@ surfaces the slot where the most people can attend.
 ## Tech stack
 
 **Frontend** — `apps/frontend`
+
 - [Next.js](https://nextjs.org/) (App Router)
 - [MUI](https://mui.com/) v9 + [Tailwind CSS](https://tailwindcss.com/) v4, combined via CSS cascade layers
 
 **Backend** — `apps/backend`
+
 - [NestJS](https://nestjs.com/)
-- PostgreSQL via MikroORM, behind a repository/ports-and-adapters layer *(planned)*
+- PostgreSQL via MikroORM, behind a repository/ports-and-adapters layer _(planned)_
 
 **Shared tooling**
+
 - [Bun](https://bun.sh/) as the runtime and package manager for both apps
 - Bun workspaces + [Turborepo](https://turborepo.com/) for the monorepo
 - [oxlint](https://oxc.rs/) + [oxfmt](https://oxc.rs/) for linting/formatting
 - `bun test` for the backend test suite
 
-**Infra & deployment** *(planned)*
+**Infra & deployment** _(planned)_
+
 - [Terraform](https://www.terraform.io/) on Google Cloud (Cloud Run, Secret Manager, IAM)
 - GitHub Actions CI/CD — checks on PRs into `develop`, deploy from `main`
 - Docker Compose for local Postgres
