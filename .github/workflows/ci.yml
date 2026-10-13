@@ -76,3 +76,91 @@ jobs:
         with:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-${{ github.sha }}
+
+  # Job-level path gating rather than workflow-level `paths:` — a skipped
+  # workflow leaves required status checks pending forever, a skipped job
+  # counts as passed.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          # On push, diff against the previous commit of the same branch
+          # (default would be the merge-base with the repo default branch).
+          # Left empty on pull_request, where the PR base is used and a set
+          # base only produces a warning.
+          base: ${{ github.event_name == 'push' && github.ref || '' }}
+          filters: |
+            backend:
+              - apps/backend/**
+              # The image's prune stage validates the shared lockfile against
+              # every workspace manifest.
+              - apps/frontend/package.json
+              - packages/**
+              - package.json
+              - bun.lock
+              - turbo.json
+              - .dockerignore
+              - .github/workflows/ci.yml
+
+  backend-image:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - name: Read Bun version
+        id: bun
+        run: |
+          pm=$(jq -r '.packageManager // empty' package.json)
+          if [[ ! "$pm" =~ ^bun@([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "::error::packageManager must be bun@X.Y.Z, got '$pm'"
+            exit 1
+          fi
+          echo "version=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/backend/Dockerfile
+          build-args: BUN_VERSION=${{ steps.bun.outputs.version }}
+          tags: meet-poll-backend:ci
+          load: true
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+      - name: Smoke test container
+        run: |
+          docker run -d --name backend -p 8080:8080 meet-poll-backend:ci
+          for _ in $(seq 1 30); do
+            if [ "$(docker inspect -f '{{.State.Running}}' backend)" != true ]; then
+              echo "::error::Container exited during startup"
+              docker logs backend
+              exit 1
+            fi
+            curl -fs --max-time 2 localhost:8080/health && break
+            sleep 1
+          done
+          curl -fs --max-time 2 localhost:8080/health || { docker logs backend; exit 1; }
+
+          # Cloud Run sends SIGTERM on scale-down; the app must exit cleanly
+          # well within the grace period rather than being SIGKILLed — even
+          # with an idle keep-alive connection open, as Cloud Run's front end
+          # holds them.
+          exec 3<>/dev/tcp/127.0.0.1/8080
+          printf 'GET /health HTTP/1.1\r\nHost: localhost\r\n\r\n' >&3
+          docker stop -t 5 backend
+          exec 3>&-
+          code=$(docker inspect -f '{{.State.ExitCode}}' backend)
+          if [ "$code" != 0 ]; then
+            echo "::error::Container exited with $code on SIGTERM (expected 0)"
+            docker logs backend
+            exit 1
+          fi
