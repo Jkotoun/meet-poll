@@ -47,6 +47,7 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
+      infra: ${{ steps.filter.outputs.infra }}
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v7
@@ -73,6 +74,9 @@ jobs:
               - *shared
               - apps/frontend/**
               - apps/backend/package.json
+            infra:
+              - infra/**
+              - .github/workflows/ci.yml
 
   backend-image:
     name: Backend image
@@ -111,3 +115,24 @@ jobs:
           file: apps/frontend/Dockerfile
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
+
+  terraform-check:
+    needs: changes
+    if: needs.changes.outputs.infra == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        stack: [bootstrap]
+    defaults:
+      run:
+        working-directory: infra/${{ matrix.stack }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ~1.14
+      - run: terraform fmt -check -recursive
+      # No backend: validation needs provider schemas, not state or credentials.
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate
