@@ -14,26 +14,34 @@ permissions:
 
 jobs:
   checks:
+    name: Checks
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
+      - name: 📥 Checkout
+        uses: actions/checkout@v7
+      - name: 🥟 Set up Bun
+        uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json
-      - run: bun install --frozen-lockfile
-      - run: bun run format:check
-      - uses: actions/cache@v6
+      - name: 📦 Install dependencies
+        run: bun install --frozen-lockfile
+      - name: 🎨 Check formatting
+        run: bun run format:check
+      - name: 💾 Restore Turbo cache
+        uses: actions/cache@v6
         with:
           path: .turbo
           key: ${{ runner.os }}-turbo-${{ github.sha }}
           restore-keys: ${{ runner.os }}-turbo-
-      - run: bunx turbo run lint typecheck test test:e2e build
+      - name: ✅ Build, lint, typecheck and test
+        run: bunx turbo run build lint typecheck test test:e2e
 
   # Job-level path gating rather than workflow-level `paths:` — a skipped
   # workflow leaves required status checks pending forever, a skipped job
   # counts as passed.
   changes:
+    name: Detect changes
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -42,9 +50,11 @@ jobs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: dorny/paths-filter@v4
+      - name: 📥 Checkout
+        uses: actions/checkout@v7
+      - name: 🔎 Detect changed paths
         id: filter
+        uses: dorny/paths-filter@v4
         with:
           # On push, diff against the previous commit of the same branch
           # (default would be the merge-base with the repo default branch).
@@ -72,20 +82,24 @@ jobs:
               - apps/backend/package.json
 
   backend-image:
+    name: Backend image
     needs: changes
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
-      - uses: docker/setup-buildx-action@v4
-      - name: Read Bun version
+      - name: 📥 Checkout
+        uses: actions/checkout@v7
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: 🥟 Read Bun version
         id: bun
         # Assigned first: a failing $(...) inside echo would not fail the step.
         run: |
           version=$(.github/scripts/bun-version.sh)
           echo "version=$version" >> "$GITHUB_OUTPUT"
-      - uses: docker/build-push-action@v7
+      - name: 🏗️ Build image
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: apps/backend/Dockerfile
@@ -94,7 +108,8 @@ jobs:
           load: true
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
-      - run: .github/scripts/smoke-test-container.sh meet-poll-backend:ci 0 /health
+      - name: 💨 Smoke test container
+        run: .github/scripts/smoke-test-container.sh meet-poll-backend:ci 0 /health
 
   frontend-image:
     needs: changes
