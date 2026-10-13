@@ -15,17 +15,12 @@ RUN bun install --frozen-lockfile
 COPY --from=prune /app/out/full/ .
 RUN bunx turbo run build --filter=backend
 
-FROM base AS prod-deps
-COPY --from=prune /app/out/json/ .
-RUN bun install --frozen-lockfile --production
-
 FROM base AS runtime
 ENV NODE_ENV=production
 ENV PORT=8080
-COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=prod-deps /app/apps/backend/node_modules ./apps/backend/node_modules
+COPY --from=prune /app/out/json/ .
+RUN bun install --frozen-lockfile --production && rm -rf ~/.bun/install/cache
 COPY --from=build /app/apps/backend/dist ./apps/backend/dist
-COPY --from=prune /app/out/json/apps/backend/package.json ./apps/backend/
 WORKDIR /app/apps/backend
 USER bun
 EXPOSE 8080
