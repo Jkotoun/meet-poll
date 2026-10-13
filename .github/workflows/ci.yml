@@ -46,6 +46,7 @@ jobs:
       pull-requests: read
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v7
@@ -56,16 +57,22 @@ jobs:
           # On push, diff against the branch's previous commit.
           base: ${{ github.event_name == 'push' && github.ref || '' }}
           filters: |
-            backend:
-              - apps/backend/**
-              # turbo prune validates the lockfile against every workspace.
-              - apps/frontend/package.json
+            shared: &shared
               - packages/**
               - package.json
               - bun.lock
               - turbo.json
               - .dockerignore
               - .github/workflows/ci.yml
+            # turbo prune validates the lockfile against every workspace.
+            backend:
+              - *shared
+              - apps/backend/**
+              - apps/frontend/package.json
+            frontend:
+              - *shared
+              - apps/frontend/**
+              - apps/backend/package.json
 
   backend-image:
     name: Backend image
@@ -85,3 +92,22 @@ jobs:
           file: apps/backend/Dockerfile
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
+
+  frontend-image:
+    name: Frontend image
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v7
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: 🏗️ Build image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/frontend/Dockerfile
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
