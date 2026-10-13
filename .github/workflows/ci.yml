@@ -112,20 +112,24 @@ jobs:
         run: .github/scripts/smoke-test-container.sh meet-poll-backend:ci 0 /health
 
   frontend-image:
+    name: Frontend image
     needs: changes
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
-      - uses: docker/setup-buildx-action@v4
-      - name: Read Bun version
+      - name: 📥 Checkout
+        uses: actions/checkout@v7
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: 🥟 Read Bun version
         id: bun
         # Assigned first: a failing $(...) inside echo would not fail the step.
         run: |
           version=$(.github/scripts/bun-version.sh)
           echo "version=$version" >> "$GITHUB_OUTPUT"
-      - uses: docker/build-push-action@v7
+      - name: 🏗️ Build image
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: apps/frontend/Dockerfile
@@ -137,4 +141,5 @@ jobs:
       # Next's standalone server drains pending requests on SIGTERM, then
       # exits 143 by design (an unhandled SIGTERM would leave bun as PID 1
       # running until SIGKILL, giving 137).
-      - run: .github/scripts/smoke-test-container.sh meet-poll-frontend:ci 143 /
+      - name: 💨 Smoke test container
+        run: .github/scripts/smoke-test-container.sh meet-poll-frontend:ci 143 /
