@@ -6,10 +6,7 @@ on:
     branches: [develop, main]
 
 concurrency:
-  # PR pushes share a group so a new push supersedes the old run; pushes to
-  # develop/main are grouped per commit so every landed commit keeps its own
-  # pass/fail result (a shared group would still drop queued runs).
-  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -20,62 +17,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      # Full history so `turbo --affected` can diff against the base branch;
-      # a shallow clone makes it treat every package as changed.
       - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json
-
-      - uses: actions/cache@v6
-        with:
-          path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-          restore-keys: bun-${{ runner.os }}-
-
       - run: bun install --frozen-lockfile
-
       - run: bun run format:check
-
-      - uses: actions/cache/restore@v6
-        with:
-          path: .turbo/cache
-          key: turbo-${{ runner.os }}-${{ github.sha }}
-          restore-keys: turbo-${{ runner.os }}-
-
-      - name: Lint, typecheck, test and build affected packages
-        run: |
-          # The PR base is passed as a remote ref: the bare branch name isn't a
-          # local ref in this checkout, and when it is also a repo path (e.g. a
-          # stacked PR onto `infra/main`) git reads it as that path.
-          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
-            export TURBO_SCM_BASE="origin/$GITHUB_BASE_REF"
-          fi
-          bunx turbo run lint typecheck test test:e2e build --affected --summarize
-
-      # Each run restores the previous cache and saves it under a new key, so
-      # without pruning, artifacts of every past commit would be carried forward
-      # forever. Keep only what this run produced or hit; a run with no
-      # affected tasks has nothing new and skips saving entirely.
-      - name: Prune Turbo cache to this run's tasks
-        id: prune
-        run: |
-          hashes=$(jq -r '.tasks[].hash' .turbo/runs/*.json)
-          if [ -z "$hashes" ]; then
-            echo "save=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          find .turbo/cache -type f | grep -vF "$hashes" | xargs -r rm
-          echo "save=true" >> "$GITHUB_OUTPUT"
-
-      - if: steps.prune.outputs.save == 'true'
-        uses: actions/cache/save@v6
-        with:
-          path: .turbo/cache
-          key: turbo-${{ runner.os }}-${{ github.sha }}
+      - run: bunx turbo run lint typecheck test test:e2e build
 
   # Job-level path gating rather than workflow-level `paths:` — a skipped
   # workflow leaves required status checks pending forever, a skipped job
