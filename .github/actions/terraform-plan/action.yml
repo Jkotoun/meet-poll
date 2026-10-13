@@ -16,12 +16,14 @@ runs:
   steps:
     # Fails if .terraform.lock.hcl doesn't satisfy the provider constraints,
     # instead of silently picking (and not committing) another version.
-    - shell: bash
+    - name: ⚙️ Init
+      shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: terraform init -input=false -lockfile=readonly
     # Plans run with read-only identities that can't take the state lock; an
     # apply takes it and refuses a saved plan if state changed in between.
-    - id: plan
+    - name: 📋 Plan
+      id: plan
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |

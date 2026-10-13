@@ -17,11 +17,13 @@ jobs:
   # Only the tip of main deploys. Re-running an older run must not roll back
   # infra or apps; the newer commit's own run deploys it.
   guard:
+    name: Check tip of main
     runs-on: ubuntu-latest
     outputs:
       is_tip: ${{ steps.tip.outputs.is_tip }}
     steps:
-      - id: tip
+      - name: 🎯 Check commit is tip of main
+        id: tip
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -38,6 +40,7 @@ jobs:
   # an infra change whose own run never started. Plan compares against real
   # state, and the apply only runs when there is something to apply.
   terraform-plan:
+    name: Terraform plan
     needs: guard
     # vars.GCP_WIF_PROVIDER is empty until infra/bootstrap is applied by hand;
     # that condition is temporary (ROADMAP 1.8).
@@ -53,18 +56,22 @@ jobs:
       run:
         working-directory: infra/main
     steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/terraform-setup
+      - name: 📥 Checkout
+        uses: actions/checkout@v7
+      - name: 🧱 Set up Terraform
+        uses: ./.github/actions/terraform-setup
         with:
           authenticate: true
           workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
           service_account: ${{ vars.GCP_PLANNER_SA }}
-      - id: plan
+      - name: 📋 Plan
+        id: plan
         uses: ./.github/actions/terraform-plan
         with:
           working-directory: infra/main
       # Also on failure, so the run page says why instead of only going red.
-      - if: ${{ !cancelled() }}
+      - name: 📝 Write plan summary
+        if: ${{ !cancelled() }}
         run: |
           {
             echo "### Terraform plan — \`infra/main\`"
@@ -76,7 +83,8 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
       # The repository is public, so this plan file and the summary above are
       # readable by anyone: secret values must never be in Terraform state.
-      - uses: actions/upload-artifact@v7
+      - name: 📤 Upload plan
+        uses: actions/upload-artifact@v7
         with:
           name: tfplan
           path: infra/main/tfplan
@@ -89,6 +97,7 @@ jobs:
   # The approval prompt for the `prod` Environment shows this run's summary,
   # i.e. exactly the plan that will be applied.
   terraform-apply:
+    name: Terraform apply
     needs: terraform-plan
     if: needs.terraform-plan.outputs.has_changes == 'true'
     runs-on: ubuntu-latest
@@ -103,15 +112,20 @@ jobs:
       run:
         working-directory: infra/main
     steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/terraform-setup
+      - name: 📥 Checkout
+        uses: actions/checkout@v7
+      - name: 🧱 Set up Terraform
+        uses: ./.github/actions/terraform-setup
         with:
           authenticate: true
           workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
           service_account: ${{ vars.GCP_TERRAFORM_SA }}
-      - run: terraform init -input=false -lockfile=readonly
-      - uses: actions/download-artifact@v8
+      - name: ⚙️ Init
+        run: terraform init -input=false -lockfile=readonly
+      - name: 📥 Download plan
+        uses: actions/download-artifact@v8
         with:
           name: tfplan
           path: infra/main
-      - run: terraform apply -input=false tfplan
+      - name: 🚀 Apply
+        run: terraform apply -input=false tfplan
