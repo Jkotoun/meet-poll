@@ -1,0 +1,117 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+# Deploys queue rather than cancel: aborting a half-done apply or traffic
+# switch leaves prod in an in-between state.
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # Only the tip of main deploys. Re-running an older run must not roll back
+  # infra or apps; the newer commit's own run deploys it.
+  guard:
+    runs-on: ubuntu-latest
+    outputs:
+      is_tip: ${{ steps.tip.outputs.is_tip }}
+    steps:
+      - id: tip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tip=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+          if [ "$tip" = "$GITHUB_SHA" ]; then
+            echo "is_tip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::$GITHUB_SHA is no longer the tip of main; skipping"
+            echo "is_tip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # Plans on every push instead of path-filtering: the concurrency queue drops
+  # superseded pending runs, so a diff against the previous commit could miss
+  # an infra change whose own run never started. Plan compares against real
+  # state, and the apply only runs when there is something to apply.
+  terraform-plan:
+    needs: guard
+    # vars.GCP_WIF_PROVIDER is empty until infra/bootstrap is applied by hand;
+    # that condition is temporary (ROADMAP 1.8).
+    if: needs.guard.outputs.is_tip == 'true' && vars.GCP_WIF_PROVIDER != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      has_changes: ${{ steps.plan.outputs.has_changes }}
+    defaults:
+      run:
+        working-directory: infra/main
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/terraform-setup
+        with:
+          authenticate: true
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_PLANNER_SA }}
+      - id: plan
+        uses: ./.github/actions/terraform-plan
+        with:
+          working-directory: infra/main
+      # Also on failure, so the run page says why instead of only going red.
+      - if: ${{ !cancelled() }}
+        run: |
+          {
+            echo "### Terraform plan — \`infra/main\`"
+            if [ -f plan.txt ]; then
+              node ../../.github/scripts/plan-markdown.js plan.txt
+            else
+              echo "Plan failed — see the job log."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+      # The repository is public, so this plan file and the summary above are
+      # readable by anyone: secret values must never be in Terraform state.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tfplan
+          path: infra/main/tfplan
+          # Matches how long a `prod` approval can stay pending (30 days); a
+          # plan older than the state is refused at apply anyway. Overwrite
+          # lets "re-run all jobs" re-plan.
+          retention-days: 30
+          overwrite: true
+
+  # The approval prompt for the `prod` Environment shows this run's summary,
+  # i.e. exactly the plan that will be applied.
+  terraform-apply:
+    needs: terraform-plan
+    if: needs.terraform-plan.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    # Generous: a timeout mid-apply leaves partially applied infra and
+    # possibly a held state lock.
+    timeout-minutes: 30
+    environment: prod
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: infra/main
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/terraform-setup
+        with:
+          authenticate: true
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_TERRAFORM_SA }}
+      - run: terraform init -input=false -lockfile=readonly
+      - uses: actions/download-artifact@v8
+        with:
+          name: tfplan
+          path: infra/main
+      - run: terraform apply -input=false tfplan
