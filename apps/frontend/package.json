@@ -6,8 +6,7 @@
     "dev": "bun --bun next dev",
     "build": "bun --bun next build",
     "start": "bun --bun next start",
-    "lint": "oxlint --type-aware src",
-    "format": "oxfmt src"
+    "lint": "bun --bun next typegen && oxlint --type-aware src"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",
@@ -24,7 +23,6 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "oxfmt": "^0.72.0",
     "oxlint": "^1.87.0",
     "oxlint-tsgolint": "^7.0.2003",
     "tailwindcss": "^4.3.3",

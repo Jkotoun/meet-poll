@@ -1,0 +1,10 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "lint": {
+      // Type-aware lint reads the route types in .next/types; `next build`
+      // wipes .next/ on start, so lint must not run in parallel with it.
+      "dependsOn": ["build"]
+    }
+  }
+}
