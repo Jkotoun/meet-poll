@@ -11,3 +11,4 @@
 !**/.env.example
 out
 **/*.md
+infra
