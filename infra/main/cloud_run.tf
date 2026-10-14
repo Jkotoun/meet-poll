@@ -6,7 +6,7 @@ resource "google_cloud_run_v2_service" "this" {
   ingress  = "INGRESS_TRAFFIC_ALL"
 
   template {
-    service_account = data.google_service_account.runtime[each.key].email
+    service_account = google_service_account.runtime[each.key].email
 
     scaling {
       min_instance_count = 0
@@ -59,6 +59,7 @@ resource "google_cloud_run_v2_service" "this" {
     ]
   }
 
+  depends_on = [google_service_account_iam_member.runtime_terraform]
 }
 
 resource "google_cloud_run_v2_service_iam_member" "public" {
