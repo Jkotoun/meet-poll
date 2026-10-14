@@ -1,5 +1,5 @@
 name: Terraform plan
-description: Initializes a stack and writes a saved plan (tfplan) plus its text rendering (plan.txt). Expects Terraform to be set up and authenticated.
+description: Writes a saved plan (tfplan) and its text rendering (plan.txt).
 
 inputs:
   working-directory:
@@ -14,30 +14,23 @@ outputs:
 runs:
   using: composite
   steps:
-    # Fails if .terraform.lock.hcl doesn't satisfy the provider constraints,
-    # instead of silently picking (and not committing) another version.
     - name: ⚙️ Init
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: terraform init -input=false -lockfile=readonly
-    # Plans run with read-only identities that can't take the state lock; an
-    # apply takes it and refuses a saved plan if state changed in between.
     - name: 📋 Plan
       id: plan
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
         set +e
+        # The read-only planner can't take the state lock.
         terraform plan -input=false -lock=false -no-color -detailed-exitcode -out=tfplan
         code=$?
         set -e
         case $code in
-          0) has_changes=false ;;
-          2) has_changes=true ;;
+          0) echo "has_changes=false" >> "$GITHUB_OUTPUT" ;;
+          2) echo "has_changes=true" >> "$GITHUB_OUTPUT" ;;
           *) exit "$code" ;;
         esac
-        echo "has_changes=$has_changes" >> "$GITHUB_OUTPUT"
-        # Via a temp file so a failed `show` never leaves a partial plan.txt
-        # that would be presented as the plan.
-        terraform show -no-color tfplan > plan.tmp
-        mv plan.tmp plan.txt
+        terraform show -no-color tfplan > plan.txt

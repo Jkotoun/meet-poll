@@ -4,8 +4,7 @@ on:
   push:
     branches: [main]
 
-# Deploys queue rather than cancel: aborting a half-done apply or traffic
-# switch leaves prod in an in-between state.
+# Never cancel a half-done apply or traffic switch.
 concurrency:
   group: deploy-prod
   cancel-in-progress: false
@@ -14,8 +13,6 @@ permissions:
   contents: read
 
 jobs:
-  # Only the tip of main deploys. Re-running an older run must not roll back
-  # infra or apps; the newer commit's own run deploys it.
   guard:
     name: Check tip of main
     runs-on: ubuntu-latest
@@ -35,16 +32,10 @@ jobs:
             echo "is_tip=false" >> "$GITHUB_OUTPUT"
           fi
 
-  # Plans on every push instead of path-filtering: the concurrency queue drops
-  # superseded pending runs, so a diff against the previous commit could miss
-  # an infra change whose own run never started. Plan compares against real
-  # state, and the apply only runs when there is something to apply.
   terraform-plan:
     name: Terraform plan
     needs: guard
-    # vars.GCP_WIF_PROVIDER is empty until infra/bootstrap is applied by hand;
-    # that condition is temporary (ROADMAP 1.8).
-    if: needs.guard.outputs.is_tip == 'true' && vars.GCP_WIF_PROVIDER != ''
+    if: needs.guard.outputs.is_tip == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -58,18 +49,18 @@ jobs:
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v7
-      - name: 🧱 Set up Terraform
-        uses: ./.github/actions/terraform-setup
+      - name: 🔑 Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
         with:
-          authenticate: true
           workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
           service_account: ${{ vars.GCP_PLANNER_SA }}
+      - name: 🧱 Set up Terraform
+        uses: ./.github/actions/terraform-setup
       - name: 📋 Plan
         id: plan
         uses: ./.github/actions/terraform-plan
         with:
           working-directory: infra/main
-      # Also on failure, so the run page says why instead of only going red.
       - name: 📝 Write plan summary
         if: ${{ !cancelled() }}
         run: |
@@ -81,28 +72,19 @@ jobs:
               echo "Plan failed — see the job log."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
-      # The repository is public, so this plan file and the summary above are
-      # readable by anyone: secret values must never be in Terraform state.
       - name: 📤 Upload plan
         uses: actions/upload-artifact@v7
         with:
           name: tfplan
           path: infra/main/tfplan
-          # Matches how long a `prod` approval can stay pending (30 days); a
-          # plan older than the state is refused at apply anyway. Overwrite
-          # lets "re-run all jobs" re-plan.
           retention-days: 30
           overwrite: true
 
-  # The approval prompt for the `prod` Environment shows this run's summary,
-  # i.e. exactly the plan that will be applied.
   terraform-apply:
     name: Terraform apply
     needs: terraform-plan
     if: needs.terraform-plan.outputs.has_changes == 'true'
     runs-on: ubuntu-latest
-    # Generous: a timeout mid-apply leaves partially applied infra and
-    # possibly a held state lock.
     timeout-minutes: 30
     environment: prod
     permissions:
@@ -114,12 +96,13 @@ jobs:
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v7
-      - name: 🧱 Set up Terraform
-        uses: ./.github/actions/terraform-setup
+      - name: 🔑 Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
         with:
-          authenticate: true
           workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
           service_account: ${{ vars.GCP_TERRAFORM_SA }}
+      - name: 🧱 Set up Terraform
+        uses: ./.github/actions/terraform-setup
       - name: ⚙️ Init
         run: terraform init -input=false -lockfile=readonly
       - name: 📥 Download plan
