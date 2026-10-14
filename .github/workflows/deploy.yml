@@ -3,6 +3,7 @@ name: Deploy
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 # Never cancel a half-done apply or traffic switch.
 concurrency:
@@ -110,3 +111,67 @@ jobs:
           path: infra/main
       - name: 🚀 Apply
         run: terraform apply -input=false tfplan
+
+  changes:
+    name: Detect changed apps
+    needs: [terraform-plan, terraform-apply]
+    if: >-
+      !cancelled()
+      && needs.terraform-plan.result == 'success'
+      && contains(fromJSON('["success", "skipped"]'), needs.terraform-apply.result)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      backend: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.backend == 'true' }}
+      frontend: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.frontend == 'true' }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v7
+      - name: 🔎 Detect changed paths
+        id: filter
+        if: github.event_name == 'push'
+        uses: dorny/paths-filter@v4
+        with:
+          base: ${{ github.ref }}
+          filters: |
+            shared: &shared
+              - packages/**
+              - package.json
+              - bun.lock
+              - turbo.json
+              - .dockerignore
+              - .github/actions/build-image/**
+              - .github/workflows/deploy.yml
+              - .github/workflows/deploy-app.yml
+            backend:
+              - *shared
+              - apps/backend/**
+              - apps/frontend/package.json
+            frontend:
+              - *shared
+              - apps/frontend/**
+              - apps/backend/package.json
+
+  deploy-backend:
+    name: Deploy backend
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/deploy-app.yml
+    with:
+      app: backend
+      health_path: /health
+
+  deploy-frontend:
+    name: Deploy frontend
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/deploy-app.yml
+    with:
+      app: frontend
+      health_path: /
