@@ -13,6 +13,7 @@ permissions:
   contents: read
 
 jobs:
+  # Re-running an old run must not roll prod back to that commit.
   guard:
     name: Check tip of main
     runs-on: ubuntu-latest
