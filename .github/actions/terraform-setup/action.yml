@@ -1,0 +1,12 @@
+name: Terraform setup
+description: Installs the Terraform version shared by every job.
+
+runs:
+  using: composite
+  steps:
+    # A saved plan can only be applied by the exact version that created it.
+    - name: 🧱 Install Terraform
+      uses: hashicorp/setup-terraform@v4
+      with:
+        terraform_version: 1.14.4
+        terraform_wrapper: false

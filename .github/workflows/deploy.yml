@@ -1,0 +1,112 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+# Never cancel a half-done apply or traffic switch.
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # Re-running an old run must not roll prod back to that commit.
+  guard:
+    name: Check tip of main
+    runs-on: ubuntu-latest
+    outputs:
+      is_tip: ${{ steps.tip.outputs.is_tip }}
+    steps:
+      - name: 🎯 Check commit is tip of main
+        id: tip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tip=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+          if [ "$tip" = "$GITHUB_SHA" ]; then
+            echo "is_tip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::$GITHUB_SHA is no longer the tip of main; skipping"
+            echo "is_tip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  terraform-plan:
+    name: Terraform plan
+    needs: guard
+    if: needs.guard.outputs.is_tip == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      has_changes: ${{ steps.plan.outputs.has_changes }}
+    defaults:
+      run:
+        working-directory: infra/main
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v7
+      - name: 🔑 Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_PLANNER_SA }}
+      - name: 🧱 Set up Terraform
+        uses: ./.github/actions/terraform-setup
+      - name: 📋 Plan
+        id: plan
+        uses: ./.github/actions/terraform-plan
+        with:
+          working-directory: infra/main
+      - name: 📝 Write plan summary
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo "### Terraform plan — \`infra/main\`"
+            node ../../.github/scripts/plan-markdown.js plan.txt
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: 📤 Upload plan
+        if: steps.plan.outputs.has_changes == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: tfplan
+          path: infra/main/tfplan
+          retention-days: 30
+          overwrite: true
+
+  terraform-apply:
+    name: Terraform apply
+    needs: terraform-plan
+    if: needs.terraform-plan.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: prod
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: infra/main
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v7
+      - name: 🔑 Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_TERRAFORM_SA }}
+      - name: 🧱 Set up Terraform
+        uses: ./.github/actions/terraform-setup
+      - name: ⚙️ Init
+        run: terraform init -input=false -lockfile=readonly
+      - name: 📥 Download plan
+        uses: actions/download-artifact@v8
+        with:
+          name: tfplan
+          path: infra/main
+      - name: 🚀 Apply
+        run: terraform apply -input=false tfplan
