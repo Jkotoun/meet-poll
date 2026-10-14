@@ -14,7 +14,7 @@ surfaces the slot where the most people can attend.
 **Backend** — `apps/backend`
 
 - [NestJS](https://nestjs.com/)
-- PostgreSQL via MikroORM, behind a repository/ports-and-adapters layer _(planned)_
+- PostgreSQL via MikroORM, behind a repository/ports-and-adapters layer
 
 **Shared tooling**
 
@@ -39,6 +39,7 @@ cp apps/backend/.env.example apps/backend/.env
 
 # Postgres — localhost:5432 (user/password/db: meetpoll)
 docker compose up -d --wait
+bun run --filter backend migration:up
 
 # backend — http://localhost:3001
 bun run dev:be
