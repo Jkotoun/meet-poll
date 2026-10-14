@@ -17,7 +17,3 @@ output "deployer_service_account" {
 output "state_bucket" {
   value = google_storage_bucket.tfstate.name
 }
-
-output "runtime_service_accounts" {
-  value = { for k, sa in google_service_account.runtime : k => sa.email }
-}

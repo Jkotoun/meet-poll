@@ -15,10 +15,17 @@ resource "google_iam_workload_identity_pool_provider" "github" {
   }
 
   attribute_mapping = {
-    "google.subject"      = "assertion.sub"
-    "attribute.ref_event" = "assertion.ref + ':' + assertion.event_name"
+    "google.subject" = "assertion.sub"
   }
 
   # Without a condition any GitHub repository could mint tokens for this pool.
   attribute_condition = "assertion.repository_id == '${var.github_repository_id}'"
+}
+
+locals {
+  pool = "iam.googleapis.com/${google_iam_workload_identity_pool.github.name}"
+
+  any_workflow  = "principalSet://${local.pool}/*"
+  prod_env_jobs = "principal://${local.pool}/subject/repo:${var.github_repository}:environment:prod"
+  main_jobs     = "principal://${local.pool}/subject/repo:${var.github_repository}:ref:refs/heads/main"
 }

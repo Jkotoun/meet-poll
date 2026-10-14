@@ -1,4 +1,3 @@
-# Includes infra/main's APIs, so CI needs no service-usage rights.
 resource "google_project_service" "this" {
   for_each = toset([
     "artifactregistry.googleapis.com",

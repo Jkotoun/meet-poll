@@ -8,13 +8,7 @@ terraform {
     }
   }
 
-  # The bucket is created once by hand (see README) and adopted below via an
-  # import block, since this stack can't store its state in a bucket it has
-  # yet to create.
-  backend "gcs" {
-    bucket = "project-b4c68586-e430-4157-a61-tfstate"
-    prefix = "bootstrap"
-  }
+  # No backend: state stays local, since this stack creates the state bucket.
 }
 
 provider "google" {

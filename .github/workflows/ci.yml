@@ -137,7 +137,6 @@ jobs:
           terraform_version: ~1.14
       - name: 🎨 Check formatting
         run: terraform fmt -check -recursive
-      # No backend: validation needs provider schemas, not state or credentials.
       - name: ⚙️ Init
         run: terraform init -backend=false -input=false
       - name: ✅ Validate
