@@ -12,11 +12,12 @@ export interface TestApp {
   close(): Promise<void>;
 }
 
-export async function createTestApp(): Promise<TestApp> {
-  const database = await createTestDatabase();
+export async function bootApp(
+  databaseUrl: string,
+): Promise<INestApplication<App>> {
   const config = validateEnvironment({
     ...process.env,
-    DATABASE_URL: database.url,
+    DATABASE_URL: databaseUrl,
   });
 
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
@@ -25,6 +26,12 @@ export async function createTestApp(): Promise<TestApp> {
     .compile();
   const app = moduleRef.createNestApplication<INestApplication<App>>();
   await app.init();
+  return app;
+}
+
+export async function createTestApp(): Promise<TestApp> {
+  const database = await createTestDatabase();
+  const app = await bootApp(database.url);
 
   return {
     app,

@@ -3,6 +3,7 @@ import { PostgreSqlDriver } from '@mikro-orm/postgresql';
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Environment } from '../config/environment.js';
+import { MigrationRunner } from './migration-runner.js';
 import { createMikroOrmOptions } from './mikro-orm.options.js';
 
 @Module({
@@ -14,5 +15,6 @@ import { createMikroOrmOptions } from './mikro-orm.options.js';
         createMikroOrmOptions(config.get('DATABASE_URL', { infer: true })),
     }),
   ],
+  providers: [MigrationRunner],
 })
 export class DatabaseModule {}

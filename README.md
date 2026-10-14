@@ -39,9 +39,8 @@ cp apps/backend/.env.example apps/backend/.env
 
 # Postgres — localhost:5432 (user/password/db: meetpoll)
 docker compose up -d --wait
-bun run --filter backend migration:up
 
-# backend — http://localhost:3001
+# backend — http://localhost:3001 (applies pending migrations on start)
 bun run dev:be
 
 # frontend — http://localhost:3000

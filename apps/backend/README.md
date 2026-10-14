@@ -21,8 +21,11 @@ src/
 
 ## Database migrations
 
-Migrations are generated from entity metadata, reviewed, and committed.
-Commands read `DATABASE_URL` from `.env`.
+Migrations are generated from entity metadata, reviewed, and committed. The
+app applies pending ones on startup, before the new revision serves traffic,
+so the migrated schema must still work with the previous release's code
+(expand/contract). The commands below read `DATABASE_URL`
+from `.env`.
 
 ```bash
 bun run migration:create --name <name>  # diff entities → new migration
