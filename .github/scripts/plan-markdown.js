@@ -2,17 +2,19 @@ const fs = require('fs');
 
 const MAX_PLAN_LENGTH = 60000;
 
-function formatPlan(plan) {
-  const text =
-    plan.length > MAX_PLAN_LENGTH
-      ? `${plan.slice(0, MAX_PLAN_LENGTH)}\n… truncated, see the job log`
-      : plan;
-  return ['```', text, '```'].join('\n');
+function planMarkdown(planFile) {
+  if (!fs.existsSync(planFile)) {
+    return 'Plan failed — see the job log.';
+  }
+  let plan = fs.readFileSync(planFile, 'utf8');
+  if (plan.length > MAX_PLAN_LENGTH) {
+    plan = `${plan.slice(0, MAX_PLAN_LENGTH)}\n… truncated, see the job log`;
+  }
+  return ['```', plan, '```'].join('\n');
 }
 
-module.exports = { formatPlan };
+module.exports = { planMarkdown };
 
 if (require.main === module) {
-  const plan = fs.readFileSync(process.argv[2], 'utf8');
-  process.stdout.write(`${formatPlan(plan)}\n`);
+  process.stdout.write(`${planMarkdown(process.argv[2])}\n`);
 }

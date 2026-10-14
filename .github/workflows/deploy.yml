@@ -66,13 +66,10 @@ jobs:
         run: |
           {
             echo "### Terraform plan — \`infra/main\`"
-            if [ -f plan.txt ]; then
-              node ../../.github/scripts/plan-markdown.js plan.txt
-            else
-              echo "Plan failed — see the job log."
-            fi
+            node ../../.github/scripts/plan-markdown.js plan.txt
           } >> "$GITHUB_STEP_SUMMARY"
       - name: 📤 Upload plan
+        if: steps.plan.outputs.has_changes == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: tfplan

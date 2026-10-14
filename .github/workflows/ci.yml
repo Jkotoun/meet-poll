@@ -80,7 +80,8 @@ jobs:
               - .github/workflows/ci.yml
               - .github/scripts/upsert-plan-comment.js
               - .github/scripts/plan-markdown.js
-              - .github/actions/**
+              - .github/actions/terraform-setup/**
+              - .github/actions/terraform-plan/**
             workflows:
               - .github/workflows/**
               - .github/actions/**

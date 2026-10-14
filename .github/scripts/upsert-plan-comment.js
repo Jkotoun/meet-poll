@@ -1,20 +1,12 @@
-const fs = require('fs');
-const { formatPlan } = require('./plan-markdown.js');
+const { planMarkdown } = require('./plan-markdown.js');
 
 const MARKER = '<!-- terraform-plan:infra/main -->';
 
-function readPlan(planFile) {
-  if (!fs.existsSync(planFile)) {
-    return 'Plan failed — see the job log.';
-  }
-  return fs.readFileSync(planFile, 'utf8');
-}
-
-function renderComment(plan, sha) {
+function renderComment(planFile, sha) {
   return [
     MARKER,
     `### Terraform plan — \`infra/main\` (${sha.slice(0, 7)})`,
-    formatPlan(plan),
+    planMarkdown(planFile),
   ].join('\n');
 }
 
@@ -30,10 +22,7 @@ async function findPlanComment(github, issue) {
 
 module.exports = async ({ github, context, planFile }) => {
   const issue = { ...context.repo, issue_number: context.issue.number };
-  const body = renderComment(
-    readPlan(planFile),
-    context.payload.pull_request.head.sha,
-  );
+  const body = renderComment(planFile, context.payload.pull_request.head.sha);
 
   const existing = await findPlanComment(github, issue);
   if (existing) {
