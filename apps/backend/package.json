@@ -19,7 +19,7 @@
     "test:watch": "bun --watch test src",
     "test:cov": "bun test src --coverage",
     "test:debug": "bun --inspect-brk test src",
-    "test:e2e": "bun test test",
+    "test:e2e": "bun test --parallel test",
     "migration:create": "bun --env-file=.env --bun mikro-orm migration:create",
     "migration:up": "bun --env-file=.env --bun mikro-orm migration:up",
     "migration:down": "bun --env-file=.env --bun mikro-orm migration:down"

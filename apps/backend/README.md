@@ -29,3 +29,15 @@ bun run migration:create --name <name>  # diff entities → new migration
 bun run migration:up                    # apply pending migrations
 bun run migration:down                  # revert the last one
 ```
+
+## Tests
+
+```bash
+bun run test      # unit tests
+bun run test:e2e  # e2e tests against the compose Postgres
+```
+
+Each e2e test file creates its own database (`meetpoll_test_<uuid>`) on the
+server from `DATABASE_URL` (`.env.test`) and drops it when the file finishes,
+so files run in parallel without sharing state. With a non-default port, run
+e.g. `DATABASE_URL=postgresql://meetpoll:meetpoll@localhost:5433/meetpoll bun run test:e2e`.
