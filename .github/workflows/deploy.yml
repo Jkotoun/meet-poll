@@ -163,6 +163,7 @@ jobs:
     with:
       app: backend
       health_path: /health
+      secrets: DATABASE_URL=database-url:latest
 
   deploy-frontend:
     name: Deploy frontend

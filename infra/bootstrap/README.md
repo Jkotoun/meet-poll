@@ -39,6 +39,7 @@ Store the bootstrap outputs as GitHub repository variables:
 
 - `github-planner` — read-only; `terraform plan` on PRs from any branch.
 - `github-terraform` — `terraform apply` of `infra/main`; only from jobs in
-  the `prod` GitHub Environment.
+  the `prod` GitHub Environment. Its project IAM admin is conditioned so the
+  only role it can grant is `roles/cloudsql.client`.
 - `github-deployer` — pushes images and deploys Cloud Run revisions; only
   from jobs on `main`.

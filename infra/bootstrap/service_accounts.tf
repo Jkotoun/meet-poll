@@ -41,13 +41,26 @@ resource "google_service_account" "terraform" {
 resource "google_project_iam_member" "terraform" {
   for_each = toset([
     "roles/artifactregistry.admin",
-    "roles/run.admin",
+    "roles/cloudsql.admin",
     "roles/iam.serviceAccountAdmin",
+    "roles/run.admin",
+    "roles/secretmanager.admin",
   ])
 
   project = var.project_id
   role    = each.value
   member  = google_service_account.terraform.member
+}
+
+resource "google_project_iam_member" "terraform_grants_cloudsql_client" {
+  project = var.project_id
+  role    = "roles/resourcemanager.projectIamAdmin"
+  member  = google_service_account.terraform.member
+
+  condition {
+    title      = "Only roles/cloudsql.client"
+    expression = "api.getAttribute('iam.googleapis.com/modifiedGrantsByRole', []).hasOnly(['roles/cloudsql.client'])"
+  }
 }
 
 resource "google_storage_bucket_iam_member" "terraform_state" {
