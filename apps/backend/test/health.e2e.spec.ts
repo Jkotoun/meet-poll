@@ -1,28 +1,20 @@
-import { afterEach, beforeEach, describe, it } from 'bun:test';
-import { Test } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { afterAll, beforeAll, describe, it } from 'bun:test';
 import request from 'supertest';
-import { App } from 'supertest/types.js';
-import { AppModule } from './../src/app.module.js';
+import { createTestApp, TestApp } from './support/test-app.js';
 
 describe('HealthController (e2e)', () => {
-  let app: INestApplication<App>;
+  let testApp: TestApp;
 
-  beforeEach(async () => {
-    const moduleFixture = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    await app.init();
+  beforeAll(async () => {
+    testApp = await createTestApp();
   });
 
-  afterEach(async () => {
-    await app.close();
+  afterAll(async () => {
+    await testApp.close();
   });
 
   it('GET /health returns ok', () => {
-    return request(app.getHttpServer())
+    return request(testApp.app.getHttpServer())
       .get('/health')
       .expect(200)
       .expect({ status: 'ok' });

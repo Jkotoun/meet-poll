@@ -17,6 +17,20 @@ jobs:
     name: Checks
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: meetpoll
+          POSTGRES_PASSWORD: meetpoll
+          POSTGRES_DB: meetpoll
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U meetpoll -d meetpoll"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v7
