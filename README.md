@@ -22,19 +22,22 @@ surfaces the slot where the most people can attend.
 - Bun workspaces + [Turborepo](https://turborepo.com/) for the monorepo
 - [oxlint](https://oxc.rs/) + [oxfmt](https://oxc.rs/) for linting/formatting
 - `bun test` for the backend test suite
+- Docker Compose for local Postgres
 
 **Infra & deployment** _(planned)_
 
 - [Terraform](https://www.terraform.io/) on Google Cloud (Cloud Run, Secret Manager, IAM)
 - GitHub Actions CI/CD — checks on PRs into `develop`, deploy from `main`
-- Docker Compose for local Postgres
 
 ## Running locally
 
-Requires [Bun](https://bun.sh/) installed.
+Requires [Bun](https://bun.sh/) and Docker.
 
 ```bash
 bun install
+
+# Postgres — localhost:5432 (user/password/db: meetpoll)
+docker compose up -d --wait
 
 # backend — http://localhost:3001
 bun run dev:be
@@ -43,6 +46,6 @@ bun run dev:be
 bun run dev:fe
 ```
 
-There's no database wired up yet, so the backend currently runs without any
-external dependency. A `docker-compose.yml` for local Postgres will be added
-once the persistence layer lands.
+If port 5432 is taken, pick another host port with
+`POSTGRES_PORT=5433 docker compose up -d --wait`. `docker compose down -v`
+stops Postgres and wipes its data.
