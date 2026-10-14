@@ -16,7 +16,14 @@ terraform init
 terraform apply
 ```
 
-Then store the outputs as GitHub repository variables:
+Then initialize `infra/main`'s state once (the read-only PR planner can't
+create it):
+
+```sh
+cd ../main && terraform init
+```
+
+Store the bootstrap outputs as GitHub repository variables:
 
 | Variable           | Output                       |
 | ------------------ | ---------------------------- |
