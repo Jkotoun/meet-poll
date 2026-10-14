@@ -1,0 +1,28 @@
+name: Build app image
+description: Builds an app's Docker image using the shared GitHub Actions layer cache.
+
+inputs:
+  app:
+    description: App directory under apps/ (backend or frontend).
+    required: true
+  tags:
+    description: Image tag(s) to apply.
+    required: false
+  push:
+    description: Push to the registry (deploy) or only build (CI).
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: 🐳 Set up Docker Buildx
+      uses: docker/setup-buildx-action@v4
+    - name: 🏗️ Build image
+      uses: docker/build-push-action@v7
+      with:
+        context: .
+        file: apps/${{ inputs.app }}/Dockerfile
+        tags: ${{ inputs.tags }}
+        push: ${{ inputs.push }}
+        cache-from: type=gha,scope=${{ inputs.app }}
+        cache-to: type=gha,mode=max,scope=${{ inputs.app }}
