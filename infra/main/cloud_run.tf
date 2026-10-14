@@ -1,4 +1,4 @@
-resource "google_cloud_run_v2_service" "this" {
+resource "google_cloud_run_v2_service" "app" {
   for_each = local.services
 
   name     = "meet-poll-${each.key}"
@@ -14,8 +14,6 @@ resource "google_cloud_run_v2_service" "this" {
     }
 
     containers {
-      # Placeholder until CD deploys the real image; CD owns the image from
-      # then on (see lifecycle below).
       image = "us-docker.pkg.dev/cloudrun/container/hello"
 
       ports {
@@ -40,13 +38,7 @@ resource "google_cloud_run_v2_service" "this" {
     }
   }
 
-  # Terraform owns resources, scaling, probes and identity; CD owns the image,
-  # env vars and which revision serves. CD deploys each image as a no-traffic
-  # revision, smoke-tests it, then routes 100% to exactly that revision, and
-  # redeploys whenever the newest revision isn't the serving one — so a
-  # template change made here goes live only after passing the smoke test.
-  # Traffic must stay ignored: resetting it to "latest" would serve
-  # revisions that were never tested.
+  # Image, env, traffic and gcloud-stamped metadata are owned by CD.
   lifecycle {
     ignore_changes = [
       client,
@@ -63,7 +55,7 @@ resource "google_cloud_run_v2_service" "this" {
 }
 
 resource "google_cloud_run_v2_service_iam_member" "public" {
-  for_each = google_cloud_run_v2_service.this
+  for_each = google_cloud_run_v2_service.app
 
   name     = each.value.name
   location = each.value.location
@@ -72,7 +64,7 @@ resource "google_cloud_run_v2_service_iam_member" "public" {
 }
 
 resource "google_cloud_run_v2_service_iam_member" "deployer" {
-  for_each = google_cloud_run_v2_service.this
+  for_each = google_cloud_run_v2_service.app
 
   name     = each.value.name
   location = each.value.location

@@ -146,13 +146,9 @@ jobs:
   terraform-plan:
     name: Terraform plan
     needs: changes
-    # vars.GCP_WIF_PROVIDER is empty until infra/bootstrap is applied by hand;
-    # this guard is temporary (ROADMAP 1.8), since afterwards a missing
-    # variable must fail loudly. Fork PRs can't get a token from the pool.
     if: >-
       github.event_name == 'pull_request'
       && needs.changes.outputs.infra == 'true'
-      && vars.GCP_WIF_PROVIDER != ''
       && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -178,16 +174,11 @@ jobs:
           terraform_wrapper: false
       - name: ⚙️ Init
         run: terraform init -input=false -lockfile=readonly
-      # Read-only identity: it can't take the state lock, and a PR plan never
-      # writes state anyway.
+      # The read-only planner can't take the state lock.
       - name: 📋 Plan
         run: terraform plan -input=false -lock=false -no-color -out=tfplan
-      # Written via a temp file so a failed `show` never leaves a partial
-      # plan.txt that would be posted as if it were the plan.
       - name: 📝 Render plan
-        run: terraform show -no-color tfplan > plan.tmp && mv plan.tmp plan.txt
-      # Also runs when plan failed, so the PR never keeps showing an older,
-      # successful plan as if it were current.
+        run: terraform show -no-color tfplan > plan.txt
       - name: 💬 Comment plan on PR
         if: ${{ !cancelled() }}
         uses: actions/github-script@v9
