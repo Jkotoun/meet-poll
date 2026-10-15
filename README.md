@@ -36,6 +36,7 @@ Requires [Bun](https://bun.sh/) and Docker.
 ```bash
 bun install
 cp apps/backend/.env.example apps/backend/.env
+cp apps/frontend/.env.example apps/frontend/.env.local
 
 # Postgres — localhost:5432 (user/password/db: meetpoll)
 docker compose up -d --wait

@@ -3,10 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "api:generate": "openapi-typescript ../backend/openapi.json -o src/api/schema.d.ts",
     "dev": "bun --bun next dev",
     "build": "bun --bun next build",
     "start": "bun --bun next start",
-    "lint": "bun --bun next typegen && oxlint --type-aware src"
+    "lint": "bun --bun next typegen && oxlint --type-aware src",
+    "typecheck": "bun --bun next typegen && tsc --noEmit --incremental false",
+    "test": "bun test src"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",
@@ -15,14 +18,17 @@
     "@mui/material": "^9.4.0",
     "@mui/material-nextjs": "^9.4.0",
     "next": "16.4.0",
+    "openapi-fetch": "^0.17.0",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
+    "@types/bun": "^1.4.3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "openapi-typescript": "^7.13.0",
     "oxlint": "^1.87.0",
     "oxlint-tsgolint": "^7.0.2003",
     "tailwindcss": "^4.3.3",
