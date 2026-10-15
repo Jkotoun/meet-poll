@@ -9,3 +9,6 @@ build/
 .env.local
 .DS_Store
 .idea/
+**/.terraform/
+*.tfstate
+*.tfstate.*

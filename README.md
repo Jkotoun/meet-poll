@@ -1,4 +1,4 @@
-# Meet Poll
+# Meet Poll - WIP
 
 A Doodle-style scheduling-poll app: an organizer proposes candidate meeting
 times, invitees vote **Yes / No / If-need-be** on each one, and the app
@@ -7,38 +7,46 @@ surfaces the slot where the most people can attend.
 ## Tech stack
 
 **Frontend** — `apps/frontend`
+
 - [Next.js](https://nextjs.org/) (App Router)
 - [MUI](https://mui.com/) v9 + [Tailwind CSS](https://tailwindcss.com/) v4, combined via CSS cascade layers
 
 **Backend** — `apps/backend`
+
 - [NestJS](https://nestjs.com/)
-- PostgreSQL via MikroORM, behind a repository/ports-and-adapters layer *(planned)*
+- PostgreSQL via MikroORM, behind a repository/ports-and-adapters layer
 
 **Shared tooling**
+
 - [Bun](https://bun.sh/) as the runtime and package manager for both apps
 - Bun workspaces + [Turborepo](https://turborepo.com/) for the monorepo
 - [oxlint](https://oxc.rs/) + [oxfmt](https://oxc.rs/) for linting/formatting
 - `bun test` for the backend test suite
+- Docker Compose for local Postgres
 
-**Infra & deployment** *(planned)*
+**Infra & deployment** _(planned)_
+
 - [Terraform](https://www.terraform.io/) on Google Cloud (Cloud Run, Secret Manager, IAM)
 - GitHub Actions CI/CD — checks on PRs into `develop`, deploy from `main`
-- Docker Compose for local Postgres
 
 ## Running locally
 
-Requires [Bun](https://bun.sh/) installed.
+Requires [Bun](https://bun.sh/) and Docker.
 
 ```bash
 bun install
+cp apps/backend/.env.example apps/backend/.env
 
-# backend — http://localhost:3000
-bun run --filter backend start:dev
+# Postgres — localhost:5432 (user/password/db: meetpoll)
+docker compose up -d --wait
 
-# frontend — also defaults to :3000, run on another port if both are up:
-bun run --filter frontend dev -- -p 3001
+# backend — http://localhost:3001 (applies pending migrations on start)
+bun run dev:be
+
+# frontend — http://localhost:3000
+bun run dev:fe
 ```
 
-There's no database wired up yet, so the backend currently runs without any
-external dependency. A `docker-compose.yml` for local Postgres will be added
-once the persistence layer lands.
+If port 5432 is taken, pick another host port with
+`POSTGRES_PORT=5433 docker compose up -d --wait`. `docker compose down -v`
+stops Postgres and wipes its data.

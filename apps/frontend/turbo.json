@@ -1,0 +1,20 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      // The standalone bundle (with its own node_modules copy) is only used by
+      // the Docker build, which doesn't go through Turbo's cache.
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "!.next/dev/**",
+        "!.next/standalone/**"
+      ]
+    },
+    "lint": {
+      // Type-aware lint reads the route types in .next/types; `next build`
+      // wipes .next/ on start, so lint must not run in parallel with it.
+      "dependsOn": ["build"]
+    }
+  }
+}
