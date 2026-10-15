@@ -1,10 +1,18 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { backendConfig } from '@/api/backend-config';
+import { loginPath } from '@/auth/login-path';
+import { SESSION_COOKIE } from '@/auth/session-cookie';
 
 const API_PREFIX = '/api';
 
-// Same-origin /api/* goes to the backend, so its cookies stay first-party.
 export function proxy(request: NextRequest): NextResponse {
+  return request.nextUrl.pathname.startsWith(API_PREFIX)
+    ? proxyToBackend(request)
+    : requireSession(request);
+}
+
+// Same-origin /api/* goes to the backend, so its cookies stay first-party.
+function proxyToBackend(request: NextRequest): NextResponse {
   if (isCrossSiteWrite(request)) {
     return forbidden(request.nextUrl.pathname);
   }
@@ -54,6 +62,17 @@ function originHost(origin: string): string | undefined {
   return URL.canParse(origin) ? new URL(origin).host : undefined;
 }
 
+// Optimistic check only: pages still verify the session with the backend.
+function requireSession(request: NextRequest): NextResponse {
+  if (request.cookies.has(SESSION_COOKIE)) {
+    return NextResponse.next();
+  }
+  const { pathname, search } = request.nextUrl;
+  return NextResponse.redirect(
+    new URL(loginPath(pathname + search), request.url),
+  );
+}
+
 function forbidden(instance: string): NextResponse {
   return NextResponse.json(
     { type: 'about:blank', title: 'Forbidden', status: 403, instance },
@@ -62,5 +81,5 @@ function forbidden(instance: string): NextResponse {
 }
 
 export const config = {
-  matcher: ['/api/:path*'],
+  matcher: ['/api/:path*', '/account/:path*'],
 };

@@ -3,6 +3,9 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v16-appRouter';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { Suspense } from 'react';
+import { CurrentUserBoundary } from '@/auth/current-user-boundary';
+import { NavBar, NavBarFrame } from '@/shell/nav-bar';
 import theme from '@/theme';
 import { Providers } from './providers';
 import './globals.css';
@@ -33,7 +36,15 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
         <AppRouterCacheProvider options={{ enableCssLayer: true }}>
           <ThemeProvider theme={theme}>
             <CssBaseline />
-            <Providers>{children}</Providers>
+            <Providers>
+              {/* Reading the session cookie is per request, so it streams in. */}
+              <Suspense fallback={<NavBarFrame />}>
+                <CurrentUserBoundary>
+                  <NavBar />
+                </CurrentUserBoundary>
+              </Suspense>
+              {children}
+            </Providers>
           </ThemeProvider>
         </AppRouterCacheProvider>
       </body>

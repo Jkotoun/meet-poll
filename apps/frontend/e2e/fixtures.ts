@@ -45,3 +45,22 @@ export async function registerViaApi(
 export function formAlert(page: Page): Locator {
   return page.getByRole('main').getByRole('alert');
 }
+
+// `page.request` shares the page's cookie jar, so the page is signed in afterwards.
+export async function signInViaApi(
+  page: Page,
+  clientIp: string,
+  name = 'Ada Lovelace',
+): Promise<string> {
+  const email = newEmail();
+  const response = await page.request.post('/api/v1/auth/register', {
+    headers: { 'x-forwarded-for': clientIp },
+    data: { email, name, password: PASSWORD },
+  });
+  expect(response.status()).toBe(201);
+  return email;
+}
+
+export function navBar(page: Page): Locator {
+  return page.getByRole('navigation', { name: 'Main' });
+}

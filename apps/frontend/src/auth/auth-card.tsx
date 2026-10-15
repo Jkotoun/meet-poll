@@ -9,7 +9,7 @@ interface AuthCardProps {
 
 export function AuthCard({ title, children }: AuthCardProps) {
   return (
-    <main className="flex min-h-screen items-center justify-center p-4">
+    <main className="flex justify-center px-4 py-16">
       <Paper className="flex w-full max-w-sm flex-col gap-4 p-6">
         <Typography variant="h5" component="h1">
           {title}

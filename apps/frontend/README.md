@@ -26,6 +26,16 @@ and its problem details become field errors (`errors[]` pointers) or a
 form-level alert; a network failure shows a form-level message. TanStack Query holds the session user; the login, register
 and logout mutations update it. `?next=` redirects only to same-origin paths.
 
+## Session in the UI
+
+`CurrentUserBoundary` reads the session on the server (`getCurrentUser()`
+calls `/v1/auth/me` with the cookie) and hydrates it into TanStack Query, so
+the nav is right in the server HTML. If the backend is unreachable, public
+pages still render and the browser fetches the user later. `proxy.ts` sends
+visitors without a session cookie from protected routes (`/account`) to
+`/login?next=…`; protected pages still verify the user and redirect when the
+cookie is expired or forged.
+
 ## Tests
 
 ```bash

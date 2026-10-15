@@ -128,4 +128,21 @@ describe('proxy', () => {
       'https://backend.test/v1/events',
     );
   });
+
+  it('sends visitors without a session to log in, keeping where they were going', () => {
+    const response = proxy(request('/account?tab=profile'));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toEndWith(
+      '/login?next=%2Faccount%3Ftab%3Dprofile',
+    );
+  });
+
+  it('lets visitors with a session cookie through to protected pages', () => {
+    const response = proxy(
+      request('/account', { headers: { cookie: 'session=token' } }),
+    );
+
+    expect(response.headers.get('x-middleware-next')).toBe('1');
+  });
 });
