@@ -15,10 +15,10 @@ on:
         description: Secret Manager env bindings for --update-secrets (ENV=secret:version,...).
         type: string
         default: ''
-      backend_url_env:
-        description: Set BACKEND_URL to the backend service's URL.
-        type: boolean
-        default: false
+      env_vars:
+        description: Plain env vars for --update-env-vars (NAME=value,...).
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -52,21 +52,13 @@ jobs:
           tags: ${{ env.IMAGE }}
           push: true
 
-      - name: 🔗 Resolve backend URL
-        id: backend
-        if: inputs.backend_url_env
-        run: |
-          url=$(gcloud run services describe meet-poll-backend --region "$REGION" --format='value(status.url)')
-          test -n "$url"
-          echo "env_vars=BACKEND_URL=$url" >> "$GITHUB_OUTPUT"
-
       # No --tag here: it would pin the revision name in the template, and
       # Terraform's next template change would then fail with 409.
       - name: 🚢 Deploy candidate revision (no traffic)
         id: deploy
         env:
           SECRETS: ${{ inputs.secrets }}
-          ENV_VARS: ${{ steps.backend.outputs.env_vars }}
+          ENV_VARS: ${{ inputs.env_vars }}
         run: |
           gcloud run deploy "$SERVICE" --region "$REGION" --image "$IMAGE" --no-traffic --quiet \
             ${SECRETS:+--update-secrets "$SECRETS"} \
