@@ -18,7 +18,7 @@ export enum NodeEnv {
 
 export class Environment {
   @IsEnum(NodeEnv)
-  NODE_ENV: NodeEnv = NodeEnv.Development;
+  NODE_ENV: NodeEnv;
 
   @IsInt()
   @Min(1)

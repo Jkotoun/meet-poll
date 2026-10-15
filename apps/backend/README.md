@@ -19,6 +19,21 @@ src/
     <feature>.module.ts
 ```
 
+## API contract
+
+Routes are versioned under `/v1` (`/health` is unversioned). Outside
+production, Swagger UI is served at `/docs`.
+
+`openapi.json` is the committed contract the frontend client is generated
+from. Regenerate it after changing routes or DTOs; CI fails when it's stale.
+
+```bash
+bun run openapi:generate
+```
+
+DTO schemas come from explicit `@ApiProperty()` decorators. The swagger CLI
+plugin isn't used because Bun runs `src` without tsc transformers.
+
 ## Database migrations
 
 Migrations are generated from entity metadata, reviewed, and committed. The
