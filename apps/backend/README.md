@@ -34,6 +34,13 @@ bun run openapi:generate
 DTO schemas come from explicit `@ApiProperty()` decorators. The swagger CLI
 plugin isn't used because Bun runs `src` without tsc transformers.
 
+## Errors and validation
+
+Every error is an RFC 9457 `application/problem+json` body. Request input
+(body, query, params) is validated against class-validator DTOs; unknown
+properties are rejected, and invalid fields are listed in `errors[]` as JSON
+pointers.
+
 ## Database migrations
 
 Migrations are generated from entity metadata, reviewed, and committed. The

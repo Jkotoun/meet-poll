@@ -15,6 +15,16 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            }
           }
         },
         "tags": ["health"]
@@ -47,6 +57,52 @@
           }
         },
         "required": ["status"]
+      },
+      "InvalidFieldDto": {
+        "type": "object",
+        "properties": {
+          "pointer": {
+            "type": "string",
+            "example": "#/title"
+          },
+          "detail": {
+            "type": "string",
+            "example": "title should not be empty"
+          }
+        },
+        "required": ["pointer", "detail"]
+      },
+      "ProblemDetailsDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "about:blank"
+          },
+          "title": {
+            "type": "string",
+            "example": "Bad Request"
+          },
+          "status": {
+            "type": "number",
+            "example": 400
+          },
+          "detail": {
+            "type": "string",
+            "example": "Request validation failed"
+          },
+          "instance": {
+            "type": "string",
+            "example": "/v1/events"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InvalidFieldDto"
+            }
+          }
+        },
+        "required": ["type", "title", "status", "instance"]
       }
     }
   }
