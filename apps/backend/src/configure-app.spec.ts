@@ -47,6 +47,20 @@ describe('configureApp', () => {
     expect(Object.keys(response.body.paths)).toEqual(['/v1/things']);
   });
 
+  it('documents problem+json as the default error response', async () => {
+    app = await createApp(NodeEnv.Development);
+    const response = await request(app.getHttpServer())
+      .get('/docs-json')
+      .expect(200);
+    expect(
+      response.body.paths['/v1/things'].get.responses.default.content,
+    ).toEqual({
+      'application/problem+json': {
+        schema: { $ref: '#/components/schemas/ProblemDetailsDto' },
+      },
+    });
+  });
+
   it('does not expose docs in production', async () => {
     app = await createApp(NodeEnv.Production);
     const server = app.getHttpServer();
