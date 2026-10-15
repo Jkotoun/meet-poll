@@ -53,6 +53,7 @@ from `.env`.
 bun run migration:create --name <name>  # diff entities → new migration
 bun run migration:up                    # apply pending migrations
 bun run migration:down                  # revert the last one
+bun run migration:check                 # fail if entities need a new migration (CI)
 ```
 
 ## Tests
