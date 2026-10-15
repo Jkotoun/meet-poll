@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
   // from the topmost lockfile it finds, which a stray lockfile in a parent
   // directory would silently change.
   outputFileTracingRoot: fileURLToPath(new URL('../..', import.meta.url)),
+  experimental: {
+    // Requests rewritten to the backend give up after 30s.
+    proxyTimeout: 30_000,
+  },
 };
 
 export default nextConfig;
