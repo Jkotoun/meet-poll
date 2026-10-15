@@ -31,4 +31,8 @@ export class MikroOrmUserRepository extends UserRepository {
       { populate: ['identities'] },
     );
   }
+
+  findById(id: string): Promise<User | null> {
+    return this.em.findOne(UserSchema, { id }, { populate: ['identities'] });
+  }
 }

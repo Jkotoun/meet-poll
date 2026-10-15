@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UsersService, UserDto } from '../../users/users.api.js';
+import { UsersService, type UserDto } from '../../users/users.api.js';
 import { PasswordHasher } from './password-hasher.js';
 
 export interface Registration {

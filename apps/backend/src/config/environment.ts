@@ -5,6 +5,7 @@ import {
   IsInt,
   IsNotEmpty,
   IsString,
+  MinLength,
   Max,
   Min,
   validateSync,
@@ -28,6 +29,10 @@ export class Environment {
   @IsString()
   @IsNotEmpty()
   DATABASE_URL: string;
+
+  @IsString()
+  @MinLength(32)
+  JWT_SECRET: string;
 }
 
 export function validateEnvironment(

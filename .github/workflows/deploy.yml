@@ -164,7 +164,7 @@ jobs:
     with:
       app: backend
       health_path: /health
-      secrets: DATABASE_URL=database-url:latest
+      secrets: DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest
 
   deploy-frontend:
     name: Deploy frontend

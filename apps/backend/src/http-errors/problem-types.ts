@@ -5,6 +5,7 @@ import {
 } from '../shared/domain/domain-error.js';
 
 const STATUS_BY_KIND: Record<DomainErrorKind, HttpStatus> = {
+  [DomainErrorKind.Unauthenticated]: HttpStatus.UNAUTHORIZED,
   [DomainErrorKind.Conflict]: HttpStatus.CONFLICT,
   [DomainErrorKind.NotFound]: HttpStatus.NOT_FOUND,
   [DomainErrorKind.Forbidden]: HttpStatus.FORBIDDEN,

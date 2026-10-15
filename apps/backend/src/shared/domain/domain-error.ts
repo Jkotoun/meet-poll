@@ -1,4 +1,5 @@
 export enum DomainErrorKind {
+  Unauthenticated = 'unauthenticated',
   Conflict = 'conflict',
   NotFound = 'not-found',
   Forbidden = 'forbidden',

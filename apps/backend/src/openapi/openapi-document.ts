@@ -5,6 +5,7 @@ import {
   OpenAPIObject,
   SwaggerModule,
 } from '@nestjs/swagger';
+import { SESSION_COOKIE } from '../auth/infrastructure/session/session-cookie.js';
 import {
   PROBLEM_JSON,
   ProblemBaseDto,
@@ -19,6 +20,7 @@ export function createOpenApiDocument(app: INestApplication): OpenAPIObject {
   const config = new DocumentBuilder()
     .setTitle('Meet Poll API')
     .setVersion(API_VERSION)
+    .addCookieAuth(SESSION_COOKIE, undefined, SESSION_COOKIE)
     .build();
   const document = SwaggerModule.createDocument(app, config, {
     extraModels: [ProblemBaseDto, ProblemDetailsDto],

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { UserDto } from '../../../users/users.api.js';
+import type { UserDto } from '../../../users/users.api.js';
 
 export class UserResponseDto {
   @ApiProperty({ format: 'uuid' })

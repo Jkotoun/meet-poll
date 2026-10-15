@@ -10,8 +10,22 @@ const ARGON2_OPTIONS = {
 
 @Injectable()
 export class Argon2PasswordHasher extends PasswordHasher {
+  private readonly dummyHash = this.hash(Bun.randomUUIDv7());
+
   hash(password: string): Promise<string> {
-    // NFKC so visually identical passwords (e.g. full-width digits) hash alike.
-    return Bun.password.hash(password.normalize('NFKC'), ARGON2_OPTIONS);
+    return Bun.password.hash(normalize(password), ARGON2_OPTIONS);
   }
+
+  async verify(password: string, hash: string | null): Promise<boolean> {
+    const matches = await Bun.password.verify(
+      normalize(password),
+      hash ?? (await this.dummyHash),
+    );
+    return hash !== null && matches;
+  }
+}
+
+// NFKC so visually identical passwords (e.g. full-width digits) hash alike.
+function normalize(password: string): string {
+  return password.normalize('NFKC');
 }

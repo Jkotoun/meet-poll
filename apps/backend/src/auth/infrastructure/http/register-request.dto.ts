@@ -8,20 +8,10 @@ import {
   Matches,
   MaxLength,
 } from 'class-validator';
-import { normalizeEmail } from '../../../users/users.api.js';
+import { nfkc, normalizedEmail, trimmed } from './transforms.js';
 
 const NO_CONTROL_CHARACTERS = /^\P{Cc}*$/u;
 const HAS_LETTER_OR_DIGIT = /[\p{L}\p{N}]/u;
-
-// Validate what will be stored: lowercasing can change the length.
-const normalizedEmail = ({ value }: { value: unknown }) =>
-  typeof value === 'string' ? normalizeEmail(value) : value;
-const trimmed = ({ value }: { value: unknown }) =>
-  typeof value === 'string' ? value.trim() : value;
-// Passwords are NFKC-normalized (look-alike characters unified) before the
-// length check, so the limits apply to what gets hashed.
-const nfkc = ({ value }: { value: unknown }) =>
-  typeof value === 'string' ? value.normalize('NFKC') : value;
 
 export class RegisterRequestDto {
   @ApiProperty({ format: 'email', maxLength: 254, example: 'ada@example.com' })

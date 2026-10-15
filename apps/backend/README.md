@@ -41,6 +41,17 @@ Every error is an RFC 9457 `application/problem+json` body. Request input
 properties are rejected, and invalid fields are listed in `errors[]` as JSON
 pointers.
 
+## Auth
+
+`POST /v1/auth/register` and `/login` set a 7-day HS256 JWT (audience
+`session`) in an httpOnly, `SameSite=Lax` `session` cookie (Secure in
+production); `/logout` clears it. `SessionGuard` protects routes (import
+`AuthModule`, then use `@UseGuards(SessionGuard)` and `@CurrentUser()`); it
+loads the user on every request, so deleted accounts lose access at once.
+Wrong passwords and unknown emails get the same 401 and take the same time.
+Only JSON bodies are parsed, and the frontend proxy refuses cross-site writes,
+so HTML forms on other sites can't log anyone in or out.
+
 ## Database migrations
 
 Migrations are generated from entity metadata, reviewed, and committed. The

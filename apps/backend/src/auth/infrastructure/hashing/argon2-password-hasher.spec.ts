@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it, spyOn } from 'bun:test';
 import { Argon2PasswordHasher } from './argon2-password-hasher.js';
 
 describe('Argon2PasswordHasher', () => {
@@ -10,16 +10,25 @@ describe('Argon2PasswordHasher', () => {
     );
   });
 
-  it('produces a hash that verifies the password', async () => {
+  it('verifies the right password only', async () => {
     const hash = await hasher.hash('correct horse battery');
 
-    expect(await Bun.password.verify('correct horse battery', hash)).toBe(true);
+    expect(await hasher.verify('correct horse battery', hash)).toBe(true);
+    expect(await hasher.verify('wrong horse battery', hash)).toBe(false);
+  });
+
+  it('still runs a full check when there is no hash, then rejects', async () => {
+    const verify = spyOn(Bun.password, 'verify');
+
+    expect(await hasher.verify('correct horse battery', null)).toBe(false);
+    expect(verify).toHaveBeenCalledTimes(1);
+    verify.mockRestore();
   });
 
   it('hashes NFKC-equivalent passwords alike', async () => {
     const hash = await hasher.hash('ｐａｓｓｗｏｒｄ１２');
 
-    expect(await Bun.password.verify('password12', hash)).toBe(true);
+    expect(await hasher.verify('password12', hash)).toBe(true);
   });
 
   it('salts every hash', async () => {
