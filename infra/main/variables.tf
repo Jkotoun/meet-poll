@@ -17,3 +17,9 @@ variable "jwt_secret_version" {
   type        = number
   default     = 1
 }
+
+variable "proxy_secret_version" {
+  description = "Bump to rotate the frontend→backend proxy secret, then redeploy both apps."
+  type        = number
+  default     = 1
+}

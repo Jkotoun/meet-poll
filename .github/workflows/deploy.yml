@@ -164,7 +164,7 @@ jobs:
     with:
       app: backend
       health_path: /health
-      secrets: DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest
+      secrets: DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,PROXY_SECRET=proxy-secret:latest
 
   deploy-frontend:
     name: Deploy frontend
@@ -178,3 +178,4 @@ jobs:
       app: frontend
       health_path: /
       env_vars: BACKEND_URL=${{ vars.BACKEND_URL }}
+      secrets: PROXY_SECRET=proxy-secret:latest

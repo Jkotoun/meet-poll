@@ -8,6 +8,7 @@ import { createOpenApiDocument } from '../src/openapi/openapi-document.js';
 process.env.NODE_ENV ??= 'production';
 process.env.DATABASE_URL ??= 'postgresql://openapi@localhost/openapi';
 process.env.JWT_SECRET ??= 'openapi'.repeat(8);
+process.env.PROXY_SECRET ??= 'openapi'.repeat(8);
 const { AppModule } = await import('../src/app.module.js');
 
 const app = await NestFactory.create(AppModule, {

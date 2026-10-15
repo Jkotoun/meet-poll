@@ -2,6 +2,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { NextRequest } from 'next/server';
 import { proxy } from './proxy';
 
+const PROXY_SECRET = 's'.repeat(32);
+
+// Next passes headers set on the rewritten request as x-middleware-request-<name>.
+function forwardedHeader(response: Response, name: string): string | null {
+  return response.headers.get(`x-middleware-request-${name}`);
+}
+
 function request(
   path: string,
   init?: ConstructorParameters<typeof NextRequest>[1],
@@ -24,17 +31,23 @@ function write(headers: Record<string, string>) {
 }
 
 describe('proxy', () => {
-  const original = process.env.BACKEND_URL;
+  const original = {
+    BACKEND_URL: process.env.BACKEND_URL,
+    PROXY_SECRET: process.env.PROXY_SECRET,
+  };
 
   beforeEach(() => {
     process.env.BACKEND_URL = 'https://backend.test';
+    process.env.PROXY_SECRET = PROXY_SECRET;
   });
 
   afterEach(() => {
-    if (original === undefined) {
-      delete process.env.BACKEND_URL;
-    } else {
-      process.env.BACKEND_URL = original;
+    for (const [name, value] of Object.entries(original)) {
+      if (value === undefined) {
+        delete process.env[name];
+      } else {
+        process.env[name] = value;
+      }
     }
   });
 
@@ -79,6 +92,29 @@ describe('proxy', () => {
     expect(write(headers).headers.get('x-middleware-rewrite')).toBe(
       'https://backend.test/v1/auth/login',
     );
+  });
+
+  it('vouches for the client IP Google appended, not ones the client sent', () => {
+    const response = proxy(
+      request('/api/v1/events', {
+        headers: {
+          'x-forwarded-for': '1.2.3.4, 203.0.113.7',
+          'x-client-ip': '6.6.6.6',
+          'x-proxy-secret': 'forged',
+        },
+      }),
+    );
+
+    expect(forwardedHeader(response, 'x-client-ip')).toBe('203.0.113.7');
+    expect(forwardedHeader(response, 'x-proxy-secret')).toBe(PROXY_SECRET);
+  });
+
+  it('never forwards a client-supplied client IP', () => {
+    const response = proxy(
+      request('/api/v1/events', { headers: { 'x-client-ip': '6.6.6.6' } }),
+    );
+
+    expect(forwardedHeader(response, 'x-client-ip')).toBeNull();
   });
 
   it('allows cross-site reads', () => {

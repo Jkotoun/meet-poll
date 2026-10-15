@@ -33,6 +33,10 @@ export class Environment {
   @IsString()
   @MinLength(32)
   JWT_SECRET: string;
+
+  @IsString()
+  @MinLength(32)
+  PROXY_SECRET: string;
 }
 
 export function validateEnvironment(

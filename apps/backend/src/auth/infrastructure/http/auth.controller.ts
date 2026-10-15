@@ -9,6 +9,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import {
   ApiCookieAuth,
   ApiCreatedResponse,
@@ -18,6 +19,12 @@ import {
 } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { ApiProblemResponse } from '../../../http-errors/api-problem-response.decorator.js';
+import { RateLimited } from '../../../throttling/rate-limited.decorator.js';
+import {
+  PER_EMAIL,
+  PER_IP,
+  REGISTER_PER_IP,
+} from '../../../throttling/rate-limits.js';
 import { EMAIL_ALREADY_REGISTERED } from '../../../users/users.api.js';
 import type { UserDto } from '../../../users/users.api.js';
 import { LogInUser } from '../../application/log-in-user.js';
@@ -43,6 +50,9 @@ export class AuthController {
 
   @Post('register')
   @Header(...NO_STORE)
+  @RateLimited()
+  @Throttle({ [PER_IP]: REGISTER_PER_IP })
+  @SkipThrottle({ [PER_EMAIL]: true })
   @ApiCreatedResponse({ type: UserResponseDto })
   @ApiProblemResponse(EMAIL_ALREADY_REGISTERED)
   async register(
@@ -57,6 +67,7 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @Header(...NO_STORE)
+  @RateLimited()
   @ApiOkResponse({ type: UserResponseDto })
   @ApiProblemResponse(INVALID_CREDENTIALS)
   async logIn(

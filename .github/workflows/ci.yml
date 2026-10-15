@@ -52,6 +52,7 @@ jobs:
           NODE_ENV: test
           DATABASE_URL: postgresql://meetpoll:meetpoll@localhost:5432/meetpoll
           JWT_SECRET: ci-only-jwt-secret-of-at-least-32-characters
+          PROXY_SECRET: ci-only-proxy-secret-of-at-least-32-characters
         run: |
           bun run migration:up
           bun run migration:check

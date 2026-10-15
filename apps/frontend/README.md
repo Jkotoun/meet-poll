@@ -10,7 +10,7 @@ startup) with the `/api` prefix removed; Next forwards them and gives up after
 30s. This avoids CORS, and cookies set by the backend stay first-party.
 
 `src/api/client.ts` creates the typed client (`openapi-fetch`): browser code
-uses base URL `/api`, server code calls `backendUrl()` directly. Its types are
+uses base URL `/api`, server code calls the backend directly (`backendConfig()`). Its types are
 generated from the backend's committed `openapi.json` into
 `src/api/schema.d.ts` (gitignored); Turbo regenerates them before `dev`,
 `build` (and so `lint`/`typecheck`) and `test`, or run it by hand:

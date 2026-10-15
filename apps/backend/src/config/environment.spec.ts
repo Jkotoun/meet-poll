@@ -6,6 +6,7 @@ const valid = {
   PORT: '8080',
   DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
   JWT_SECRET: 'x'.repeat(32),
+  PROXY_SECRET: 'y'.repeat(32),
 };
 
 describe('validateEnvironment', () => {

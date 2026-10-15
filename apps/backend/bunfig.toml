@@ -1,0 +1,3 @@
+[test]
+# @nestjs/throttler (CommonJS) can only require() @nestjs/core once that ES module has loaded.
+preload = ["./test/support/load-nest-core.ts"]

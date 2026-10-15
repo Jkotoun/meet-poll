@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { MikroORM } from '@mikro-orm/postgresql';
 import request from 'supertest';
+import { fromNewClientIp } from './support/client.js';
 import { createTestApp, TestApp } from './support/test-app.js';
 
 function registration(overrides: object = {}) {
@@ -24,9 +25,9 @@ describe('POST /v1/auth/register (e2e)', () => {
   });
 
   function register(body: object) {
-    return request(testApp.app.getHttpServer())
-      .post('/v1/auth/register')
-      .send(body);
+    return fromNewClientIp(
+      request(testApp.app.getHttpServer()).post('/v1/auth/register'),
+    ).send(body);
   }
 
   async function storedPasswordHash(email: string): Promise<string> {

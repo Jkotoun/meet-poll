@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { MikroORM } from '@mikro-orm/postgresql';
 import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
+import { fromNewClientIp } from './support/client.js';
 import { createTestApp, TestApp } from './support/test-app.js';
 
 const password = 'correct horse battery';
@@ -40,8 +41,9 @@ describe('Auth session (e2e)', () => {
 
   async function registeredAccount(): Promise<Account> {
     const email = newEmail();
-    const response = await request(server())
-      .post('/v1/auth/register')
+    const response = await fromNewClientIp(
+      request(server()).post('/v1/auth/register'),
+    )
       .send({ email, name: 'Ada', password })
       .expect(201);
     return {
