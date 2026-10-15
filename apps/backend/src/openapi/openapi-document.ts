@@ -7,6 +7,7 @@ import {
 } from '@nestjs/swagger';
 import {
   PROBLEM_JSON,
+  ProblemBaseDto,
   ProblemDetailsDto,
 } from '../http-errors/problem-details.dto.js';
 
@@ -20,7 +21,7 @@ export function createOpenApiDocument(app: INestApplication): OpenAPIObject {
     .setVersion(API_VERSION)
     .build();
   const document = SwaggerModule.createDocument(app, config, {
-    extraModels: [ProblemDetailsDto],
+    extraModels: [ProblemBaseDto, ProblemDetailsDto],
     operationIdFactory: (controllerKey, methodKey) =>
       `${controllerKey.replace(/Controller$/, '')}_${methodKey}`,
   });

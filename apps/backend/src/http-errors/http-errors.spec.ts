@@ -23,7 +23,21 @@ import {
 import type { Response } from 'express';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
+import { DomainError, DomainErrorKind } from '../shared/domain/domain-error.js';
 import { HttpErrorsModule } from './http-errors.module.js';
+
+class ThingTakenError extends DomainError {
+  constructor() {
+    super(
+      {
+        kind: DomainErrorKind.Conflict,
+        code: 'thing-taken',
+        title: 'Thing taken',
+      },
+      'Thing "a" is taken',
+    );
+  }
+}
 
 class SlotDto {
   @ApiProperty()
@@ -57,6 +71,11 @@ class ThingsController {
   @Get('missing')
   missing(): never {
     throw new NotFoundException('Thing not found');
+  }
+
+  @Get('taken')
+  taken(): never {
+    throw new ThingTakenError();
   }
 
   @Get('ambiguous')
@@ -110,6 +129,20 @@ describe('HTTP errors (RFC 9457 problem details)', () => {
       status: 404,
       detail: 'Thing not found',
       instance: '/things/missing',
+    });
+  });
+
+  it('maps domain errors to their status and problem type', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/things/taken')
+      .expect(409)
+      .expect('Content-Type', /application\/problem\+json/);
+    expect(response.body).toEqual({
+      type: '/problems/thing-taken',
+      title: 'Thing taken',
+      status: 409,
+      detail: 'Thing "a" is taken',
+      instance: '/things/taken',
     });
   });
 

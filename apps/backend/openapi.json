@@ -72,13 +72,9 @@
         },
         "required": ["pointer", "detail"]
       },
-      "ProblemDetailsDto": {
+      "ProblemBaseDto": {
         "type": "object",
         "properties": {
-          "type": {
-            "type": "string",
-            "example": "about:blank"
-          },
           "title": {
             "type": "string",
             "example": "Bad Request"
@@ -102,7 +98,39 @@
             }
           }
         },
-        "required": ["type", "title", "status", "instance"]
+        "required": ["title", "status", "instance"]
+      },
+      "ProblemDetailsDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Bad Request"
+          },
+          "status": {
+            "type": "number",
+            "example": 400
+          },
+          "detail": {
+            "type": "string",
+            "example": "Request validation failed"
+          },
+          "instance": {
+            "type": "string",
+            "example": "/v1/events"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InvalidFieldDto"
+            }
+          },
+          "type": {
+            "type": "string",
+            "enum": ["about:blank"]
+          }
+        },
+        "required": ["title", "status", "instance", "type"]
       }
     }
   }
