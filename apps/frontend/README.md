@@ -19,8 +19,19 @@ generated from the backend's committed `openapi.json` into
 bun run api:generate
 ```
 
+## Auth
+
+`/login` and `/register` use TanStack Form. Submitting goes to the backend,
+and its problem details become field errors (`errors[]` pointers) or a
+form-level alert; a network failure shows a form-level message. TanStack Query holds the session user; the login, register
+and logout mutations update it. `?next=` redirects only to same-origin paths.
+
 ## Tests
 
 ```bash
-bun run test
+bun run test           # unit tests
+bun run test:browser   # Playwright against the full stack (needs Postgres)
 ```
+
+The browser tests start the backend (port 3101) and the built frontend (port 3100) themselves, using each app's `.env`/`.env.local`. Every test sends its
+own `X-Forwarded-For`, so the per-IP rate limits never block the suite.
