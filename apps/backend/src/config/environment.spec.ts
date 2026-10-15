@@ -16,10 +16,15 @@ describe('validateEnvironment', () => {
     });
   });
 
-  it('defaults NODE_ENV and PORT', () => {
-    const env = validateEnvironment({ DATABASE_URL: valid.DATABASE_URL });
-    expect(env.NODE_ENV).toBe(NodeEnv.Development);
-    expect(env.PORT).toBe(3001);
+  it('defaults PORT', () => {
+    const { PORT: _port, ...withoutPort } = valid;
+    expect(validateEnvironment(withoutPort).PORT).toBe(3001);
+  });
+
+  it('fails when NODE_ENV is missing', () => {
+    expect(() =>
+      validateEnvironment({ ...valid, NODE_ENV: undefined }),
+    ).toThrow(/NODE_ENV/);
   });
 
   it('fails when DATABASE_URL is missing', () => {
