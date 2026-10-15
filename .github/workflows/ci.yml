@@ -94,6 +94,7 @@ jobs:
               - *shared
               - apps/frontend/**
               - apps/backend/package.json
+              - apps/backend/openapi.json
             infra:
               - infra/**
               - .github/workflows/ci.yml

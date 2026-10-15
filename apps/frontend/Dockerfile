@@ -13,6 +13,8 @@ FROM base AS build
 COPY --from=prune /app/out/json/ .
 RUN bun install --frozen-lockfile
 COPY --from=prune /app/out/full/ .
+# The API types are generated from the backend's committed spec, which the prune leaves out.
+COPY --from=prune /app/apps/backend/openapi.json ./apps/backend/openapi.json
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN bunx turbo run build --filter=frontend
 
