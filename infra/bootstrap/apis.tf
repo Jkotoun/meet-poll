@@ -5,7 +5,9 @@ resource "google_project_service" "this" {
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
     "run.googleapis.com",
+    "secretmanager.googleapis.com",
     "serviceusage.googleapis.com",
+    "sqladmin.googleapis.com",
     "storage.googleapis.com",
     "sts.googleapis.com",
   ])

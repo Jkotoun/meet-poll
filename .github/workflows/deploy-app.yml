@@ -11,6 +11,10 @@ on:
         description: Path the smoke test expects a 2xx from.
         type: string
         required: true
+      secrets:
+        description: Secret Manager env bindings for --update-secrets (ENV=secret:version,...).
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -48,8 +52,11 @@ jobs:
       # Terraform's next template change would then fail with 409.
       - name: 🚢 Deploy candidate revision (no traffic)
         id: deploy
+        env:
+          SECRETS: ${{ inputs.secrets }}
         run: |
-          gcloud run deploy "$SERVICE" --region "$REGION" --image "$IMAGE" --no-traffic --quiet
+          gcloud run deploy "$SERVICE" --region "$REGION" --image "$IMAGE" --no-traffic --quiet \
+            ${SECRETS:+--update-secrets "$SECRETS"}
           revision=$(gcloud run services describe "$SERVICE" --region "$REGION" \
             --format='value(status.latestCreatedRevisionName)')
           echo "revision=$revision" >> "$GITHUB_OUTPUT"

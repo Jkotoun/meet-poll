@@ -13,11 +13,29 @@ resource "google_cloud_run_v2_service" "app" {
       max_instance_count = 2
     }
 
+    dynamic "volumes" {
+      for_each = length(each.value.cloud_sql_instances) > 0 ? [1] : []
+      content {
+        name = "cloudsql"
+        cloud_sql_instance {
+          instances = each.value.cloud_sql_instances
+        }
+      }
+    }
+
     containers {
       image = "us-docker.pkg.dev/cloudrun/container/hello"
 
       ports {
         container_port = 8080
+      }
+
+      dynamic "volume_mounts" {
+        for_each = length(each.value.cloud_sql_instances) > 0 ? [1] : []
+        content {
+          name       = "cloudsql"
+          mount_path = "/cloudsql"
+        }
       }
 
       resources {
@@ -51,7 +69,11 @@ resource "google_cloud_run_v2_service" "app" {
     ]
   }
 
-  depends_on = [google_service_account_iam_member.runtime_terraform]
+  depends_on = [
+    google_service_account_iam_member.runtime_terraform,
+    google_project_iam_member.backend_cloudsql_client,
+    google_secret_manager_secret_iam_member.backend,
+  ]
 }
 
 resource "google_cloud_run_v2_service_iam_member" "public" {
