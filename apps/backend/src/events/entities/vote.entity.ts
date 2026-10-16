@@ -1,4 +1,5 @@
-import { defineEntity, type InferEntity, p } from '@mikro-orm/postgresql';
+import { Entity, Enum, ManyToOne } from '@mikro-orm/decorators/legacy';
+import { PrimaryKeyProp, type Rel } from '@mikro-orm/postgresql';
 import { User } from '../../users/entities/user.entity.js';
 import { TimeSlot } from './time-slot.entity.js';
 
@@ -9,14 +10,16 @@ export enum VoteChoice {
 }
 
 // One row per slot and voter: the composite key is the one-vote rule.
-export const Vote = defineEntity({
-  name: 'Vote',
-  tableName: 'votes',
-  properties: {
-    slot: () => p.manyToOne(TimeSlot).primary().deleteRule('cascade'),
-    voter: () => p.manyToOne(User).primary().deleteRule('cascade').index(),
-    choice: p.enum(() => VoteChoice).nativeEnumName('vote_choice'),
-  },
-});
+@Entity({ tableName: 'votes' })
+export class Vote {
+  [PrimaryKeyProp]?: ['slot', 'voter'];
 
-export type Vote = InferEntity<typeof Vote>;
+  @ManyToOne(() => TimeSlot, { primary: true, deleteRule: 'cascade' })
+  slot: Rel<TimeSlot>;
+
+  @ManyToOne(() => User, { primary: true, deleteRule: 'cascade', index: true })
+  voter: Rel<User>;
+
+  @Enum({ items: () => VoteChoice, nativeEnumName: 'vote_choice' })
+  choice: VoteChoice;
+}

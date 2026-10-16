@@ -1,27 +1,33 @@
-import { defineEntity, type InferEntity, p } from '@mikro-orm/postgresql';
+import {
+  Check,
+  Entity,
+  OneToMany,
+  PrimaryKey,
+  Property,
+} from '@mikro-orm/decorators/legacy';
+import { Collection, type Opt } from '@mikro-orm/postgresql';
 import { Identity } from './identity.entity.js';
 
 export const USERS_EMAIL_UNIQUE = 'users_email_unique';
 
-export const User = defineEntity({
-  name: 'User',
-  tableName: 'users',
-  checks: [
-    {
-      name: 'users_email_normalized_check',
-      expression: '(email)::text = lower(TRIM(BOTH FROM email))',
-    },
-  ],
-  properties: {
-    id: p
-      .uuid()
-      .primary()
-      .onCreate(() => Bun.randomUUIDv7()),
-    email: p.string().length(254).unique(USERS_EMAIL_UNIQUE),
-    name: p.string().length(100),
-    createdAt: p.datetime().onCreate(() => new Date()),
-    identities: () => p.oneToMany(Identity).mappedBy('user'),
-  },
-});
+@Entity({ tableName: 'users' })
+@Check({
+  name: 'users_email_normalized_check',
+  expression: '(email)::text = lower(TRIM(BOTH FROM email))',
+})
+export class User {
+  @PrimaryKey({ type: 'uuid' })
+  id: Opt<string> = Bun.randomUUIDv7();
 
-export type User = InferEntity<typeof User>;
+  @Property({ type: 'string', length: 254, unique: USERS_EMAIL_UNIQUE })
+  email: string;
+
+  @Property({ type: 'string', length: 100 })
+  name: string;
+
+  @Property({ type: 'datetime' })
+  createdAt: Opt<Date> = new Date();
+
+  @OneToMany(() => Identity, (identity) => identity.user)
+  identities = new Collection<Identity>(this);
+}
