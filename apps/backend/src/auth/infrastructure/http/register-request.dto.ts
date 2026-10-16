@@ -18,7 +18,8 @@ const normalizedEmail = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? normalizeEmail(value) : value;
 const trimmed = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value;
-// Length limits apply to the form that gets hashed.
+// Passwords are NFKC-normalized (look-alike characters unified) before the
+// length check, so the limits apply to what gets hashed.
 const nfkc = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.normalize('NFKC') : value;
 
