@@ -4,11 +4,11 @@ import { useForm } from '@tanstack/react-form';
 import { useRouter } from 'next/navigation';
 import {
   FormField,
-  AuthForm,
+  SubmitForm,
   minLength,
   required,
   submitToServer,
-} from './form';
+} from '@/forms/form';
 import { nextPath } from './safe-next';
 import { useRegister } from './session';
 
@@ -22,7 +22,7 @@ export function RegisterForm() {
   });
 
   return (
-    <AuthForm form={form} submitLabel="Create account">
+    <SubmitForm form={form} submitLabel="Create account">
       <form.Field name="name" validators={{ onSubmit: required('Name') }}>
         {(field) => (
           <FormField field={field} label="Name" autoComplete="name" />
@@ -51,6 +51,6 @@ export function RegisterForm() {
           />
         )}
       </form.Field>
-    </AuthForm>
+    </SubmitForm>
   );
 }

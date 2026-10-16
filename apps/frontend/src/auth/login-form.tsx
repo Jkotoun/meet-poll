@@ -2,7 +2,7 @@
 
 import { useForm } from '@tanstack/react-form';
 import { useRouter } from 'next/navigation';
-import { FormField, AuthForm, required, submitToServer } from './form';
+import { FormField, SubmitForm, required, submitToServer } from '@/forms/form';
 import { nextPath } from './safe-next';
 import { useLogin } from './session';
 
@@ -16,7 +16,7 @@ export function LoginForm() {
   });
 
   return (
-    <AuthForm form={form} submitLabel="Log in">
+    <SubmitForm form={form} submitLabel="Log in">
       <form.Field name="email" validators={{ onSubmit: required('Email') }}>
         {(field) => (
           <FormField
@@ -40,6 +40,6 @@ export function LoginForm() {
           />
         )}
       </form.Field>
-    </AuthForm>
+    </SubmitForm>
   );
 }

@@ -3,26 +3,13 @@ import { MikroORM } from '@mikro-orm/postgresql';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
+import {
+  newEmail,
+  PASSWORD,
+  registerAccount,
+  sessionCookie,
+} from './support/accounts.js';
 import { createTestApp, TestApp } from './support/test-app.js';
-
-const password = 'correct horse battery';
-
-interface Account {
-  id: string;
-  email: string;
-  cookie: string;
-}
-
-function newEmail(): string {
-  return `${Bun.randomUUIDv7()}@example.com`;
-}
-
-function sessionCookie(response: request.Response): string {
-  const cookies = response.get('Set-Cookie') ?? [];
-  const session = cookies.find((cookie) => cookie.startsWith('session='));
-  expect(session).toBeDefined();
-  return session as string;
-}
 
 describe('Auth session (e2e)', () => {
   let testApp: TestApp;
@@ -39,19 +26,6 @@ describe('Auth session (e2e)', () => {
     return testApp.app.getHttpServer();
   }
 
-  async function registeredAccount(): Promise<Account> {
-    const email = newEmail();
-    const response = await request(server())
-      .post('/v1/auth/register')
-      .send({ email, name: 'Ada', password })
-      .expect(201);
-    return {
-      id: response.body.id,
-      email,
-      cookie: sessionCookie(response).split(';')[0],
-    };
-  }
-
   function me(cookie?: string) {
     const test = request(server()).get('/v1/auth/me');
     return cookie ? test.set('Cookie', cookie) : test;
@@ -62,7 +36,7 @@ describe('Auth session (e2e)', () => {
   }
 
   it('starts a session on register', async () => {
-    const account = await registeredAccount();
+    const account = await registerAccount(server());
 
     const response = await me(account.cookie)
       .expect(200)
@@ -76,11 +50,11 @@ describe('Auth session (e2e)', () => {
   });
 
   it('starts a session on login that /me accepts', async () => {
-    const account = await registeredAccount();
+    const account = await registerAccount(server());
 
     const login = await request(server())
       .post('/v1/auth/login')
-      .send({ email: account.email, password })
+      .send({ email: account.email, password: PASSWORD })
       .expect(200);
     const response = await me(sessionCookie(login).split(';')[0]).expect(200);
 
@@ -88,11 +62,11 @@ describe('Auth session (e2e)', () => {
   });
 
   it('logs in with the email in any case', async () => {
-    const account = await registeredAccount();
+    const account = await registerAccount(server());
 
     const response = await request(server())
       .post('/v1/auth/login')
-      .send({ email: account.email.toUpperCase(), password })
+      .send({ email: account.email.toUpperCase(), password: PASSWORD })
       .expect(200);
 
     expect(response.body).toMatchObject({
@@ -102,11 +76,11 @@ describe('Auth session (e2e)', () => {
   });
 
   it('sets an httpOnly, SameSite=Lax session cookie', async () => {
-    const account = await registeredAccount();
+    const account = await registerAccount(server());
 
     const response = await request(server())
       .post('/v1/auth/login')
-      .send({ email: account.email, password })
+      .send({ email: account.email, password: PASSWORD })
       .expect(200);
 
     const cookie = sessionCookie(response);
@@ -117,7 +91,7 @@ describe('Auth session (e2e)', () => {
   });
 
   it('answers a wrong password and an unknown email identically', async () => {
-    const account = await registeredAccount();
+    const account = await registerAccount(server());
 
     const wrongPassword = await request(server())
       .post('/v1/auth/login')
@@ -125,7 +99,7 @@ describe('Auth session (e2e)', () => {
       .expect(401);
     const unknownEmail = await request(server())
       .post('/v1/auth/login')
-      .send({ email: newEmail(), password })
+      .send({ email: newEmail(), password: PASSWORD })
       .expect(401);
 
     const expected = {
@@ -141,12 +115,12 @@ describe('Auth session (e2e)', () => {
   });
 
   it('ignores form-encoded bodies, so cross-site forms cannot log in', async () => {
-    const account = await registeredAccount();
+    const account = await registerAccount(server());
 
     await request(server())
       .post('/v1/auth/login')
       .type('form')
-      .send({ email: account.email, password })
+      .send({ email: account.email, password: PASSWORD })
       .expect(400);
   });
 
@@ -160,13 +134,13 @@ describe('Auth session (e2e)', () => {
   });
 
   it('rejects a tampered token', async () => {
-    const { cookie } = await registeredAccount();
+    const { cookie } = await registerAccount(server());
 
     await me(`${cookie.slice(0, -2)}xx`).expect(401);
   });
 
   it('rejects a token signed with another secret', async () => {
-    const { id } = await registeredAccount();
+    const { id } = await registerAccount(server());
     const token = signedToken('another-secret-of-at-least-32-chars', {
       sub: id,
     });
@@ -175,7 +149,7 @@ describe('Auth session (e2e)', () => {
   });
 
   it('rejects an expired token', async () => {
-    const { id } = await registeredAccount();
+    const { id } = await registerAccount(server());
     const token = signedToken(
       testApp.app.get(ConfigService).getOrThrow('JWT_SECRET'),
       {
@@ -188,7 +162,7 @@ describe('Auth session (e2e)', () => {
   });
 
   it('ends the session of a deleted user', async () => {
-    const account = await registeredAccount();
+    const account = await registerAccount(server());
     await testApp.app
       .get(MikroORM)
       .em.getConnection()

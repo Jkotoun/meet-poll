@@ -70,6 +70,9 @@ function SignedInActions({ name }: SignedInActionsProps) {
           Couldn&apos;t log out. Try again.
         </Typography>
       )}
+      <LinkButton href="/events" color="inherit">
+        My events
+      </LinkButton>
       <LinkButton href="/account" color="inherit">
         {name}
       </LinkButton>

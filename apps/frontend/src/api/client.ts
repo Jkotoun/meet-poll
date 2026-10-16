@@ -4,7 +4,7 @@ import type { paths } from './schema';
 // Browser code passes '/api' (the same-origin proxy); server code passes backendUrl().
 export function createApiClient(
   baseUrl: string,
-  fetchImpl?: ClientOptions['fetch'],
+  options: Omit<ClientOptions, 'baseUrl'> = {},
 ) {
-  return createClient<paths>({ baseUrl, fetch: fetchImpl });
+  return createClient<paths>({ baseUrl, ...options });
 }
