@@ -1,19 +1,16 @@
 import { STATUS_CODES } from 'node:http';
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import { ApiResponse, getSchemaPath } from '@nestjs/swagger';
-import { DomainErrorType } from '../shared/domain/domain-error.js';
 import { PROBLEM_JSON, ProblemBaseDto } from './problem-details.dto.js';
-import { problemStatus, problemTypeUri } from './problem-types.js';
+import { ProblemType, problemTypeUri } from './problem.exception.js';
 
-export function ApiProblemResponse(
-  ...types: DomainErrorType[]
-): MethodDecorator {
-  const statuses = [...new Set(types.map(problemStatus))];
+export function ApiProblemResponse(...types: ProblemType[]): MethodDecorator {
+  const statuses = [...new Set(types.map((type) => type.status))];
   return applyDecorators(
     ...statuses.map((status) =>
       problemResponse(
         status,
-        types.filter((type) => problemStatus(type) === status),
+        types.filter((type) => type.status === status),
       ),
     ),
   );
@@ -21,7 +18,7 @@ export function ApiProblemResponse(
 
 function problemResponse(
   status: HttpStatus,
-  types: DomainErrorType[],
+  types: ProblemType[],
 ): MethodDecorator {
   return ApiResponse({
     status,

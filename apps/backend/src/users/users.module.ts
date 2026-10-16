@@ -1,9 +1,8 @@
 import { Module } from '@nestjs/common';
-import { UserRepository } from './domain/user.repository.js';
-import { MikroOrmUserRepository } from './infrastructure/persistence/mikro-orm-user.repository.js';
+import { UsersService } from './users.service.js';
 
 @Module({
-  providers: [{ provide: UserRepository, useClass: MikroOrmUserRepository }],
-  exports: [UserRepository],
+  providers: [UsersService],
+  exports: [UsersService],
 })
 export class UsersModule {}

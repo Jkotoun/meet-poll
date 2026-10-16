@@ -5,6 +5,7 @@ const valid = {
   NODE_ENV: 'production',
   PORT: '8080',
   DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
+  JWT_SECRET: 'x'.repeat(32),
 };
 
 describe('validateEnvironment', () => {
@@ -31,6 +32,12 @@ describe('validateEnvironment', () => {
     expect(() =>
       validateEnvironment({ ...valid, DATABASE_URL: undefined }),
     ).toThrow(/DATABASE_URL/);
+  });
+
+  it('fails on a JWT_SECRET shorter than 32 characters', () => {
+    expect(() =>
+      validateEnvironment({ ...valid, JWT_SECRET: 'short' }),
+    ).toThrow(/JWT_SECRET/);
   });
 
   it('fails on a non-numeric PORT', () => {

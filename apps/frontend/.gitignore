@@ -43,3 +43,7 @@ next-env.d.ts
 
 # generated from apps/backend/openapi.json
 /src/api/schema.d.ts
+
+# playwright
+/test-results/
+/playwright-report/

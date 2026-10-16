@@ -29,6 +29,12 @@
     },
     "test": {
       "dependsOn": ["api:generate"]
+    },
+    // Runs `next start`, so it needs the production build.
+    "test:browser": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "passThroughEnv": ["CI", "DATABASE_URL", "JWT_SECRET"]
     }
   }
 }

@@ -14,7 +14,7 @@ surfaces the slot where the most people can attend.
 **Backend** — `apps/backend`
 
 - [NestJS](https://nestjs.com/)
-- PostgreSQL via MikroORM, behind a repository/ports-and-adapters layer
+- PostgreSQL via MikroORM, in plain NestJS feature modules
 
 **Shared tooling**
 

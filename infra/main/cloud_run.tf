@@ -69,11 +69,7 @@ resource "google_cloud_run_v2_service" "app" {
     ]
   }
 
-  depends_on = [
-    google_service_account_iam_member.runtime_terraform,
-    google_project_iam_member.backend_cloudsql_client,
-    google_secret_manager_secret_iam_member.backend,
-  ]
+  depends_on = [google_service_account_iam_member.runtime_terraform]
 }
 
 resource "google_cloud_run_v2_service_iam_member" "public" {

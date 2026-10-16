@@ -7,6 +7,7 @@ import { createOpenApiDocument } from '../src/openapi/openapi-document.js';
 // AppModule validates env when imported; preview mode never connects to the DB.
 process.env.NODE_ENV ??= 'production';
 process.env.DATABASE_URL ??= 'postgresql://openapi@localhost/openapi';
+process.env.JWT_SECRET ??= 'openapi'.repeat(8);
 const { AppModule } = await import('../src/app.module.js');
 
 const app = await NestFactory.create(AppModule, {

@@ -4,6 +4,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpStatus,
   INestApplication,
   NotFoundException,
   Post,
@@ -23,21 +24,14 @@ import {
 import type { Response } from 'express';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
-import { DomainError, DomainErrorKind } from '../shared/domain/domain-error.js';
 import { HttpErrorsModule } from './http-errors.module.js';
+import { ProblemException } from './problem.exception.js';
 
-class ThingTakenError extends DomainError {
-  constructor() {
-    super(
-      {
-        kind: DomainErrorKind.Conflict,
-        code: 'thing-taken',
-        title: 'Thing taken',
-      },
-      'Thing "a" is taken',
-    );
-  }
-}
+const THING_TAKEN = {
+  status: HttpStatus.CONFLICT,
+  code: 'thing-taken',
+  title: 'Thing taken',
+};
 
 class SlotDto {
   @ApiProperty()
@@ -75,7 +69,7 @@ class ThingsController {
 
   @Get('taken')
   taken(): never {
-    throw new ThingTakenError();
+    throw new ProblemException(THING_TAKEN, 'Thing "a" is taken');
   }
 
   @Get('ambiguous')
@@ -132,7 +126,7 @@ describe('HTTP errors (RFC 9457 problem details)', () => {
     });
   });
 
-  it('maps domain errors to their status and problem type', async () => {
+  it('maps problem exceptions to their status and problem type', async () => {
     const response = await request(app.getHttpServer())
       .get('/things/taken')
       .expect(409)

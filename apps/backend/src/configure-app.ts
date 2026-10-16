@@ -1,5 +1,7 @@
 import { INestApplication, VersioningType } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 import { NodeEnv } from './config/environment.js';
 import {
   API_VERSION,
@@ -13,8 +15,15 @@ export function configureVersioning(app: INestApplication): void {
   });
 }
 
-export function configureApp(app: INestApplication, nodeEnv: NodeEnv): void {
+// The app must be created with `bodyParser: false`; only JSON bodies are parsed,
+// so cross-site HTML form posts never reach a handler with data.
+export function configureApp(
+  app: NestExpressApplication,
+  nodeEnv: NodeEnv,
+): void {
   configureVersioning(app);
+  app.useBodyParser('json');
+  app.use(cookieParser());
 
   if (nodeEnv !== NodeEnv.Production) {
     SwaggerModule.setup('docs', app, () => createOpenApiDocument(app));
