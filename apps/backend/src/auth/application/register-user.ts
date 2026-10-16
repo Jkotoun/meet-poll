@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UsersService, UserView } from '../../users/users.api.js';
+import { UsersService, UserDto } from '../../users/users.api.js';
 import { PasswordHasher } from './password-hasher.js';
 
 export interface Registration {
@@ -15,7 +15,7 @@ export class RegisterUser {
     private readonly passwordHasher: PasswordHasher,
   ) {}
 
-  async execute({ email, name, password }: Registration): Promise<UserView> {
+  async execute({ email, name, password }: Registration): Promise<UserDto> {
     const passwordHash = await this.passwordHasher.hash(password);
     return this.users.registerWithPassword({ email, name, passwordHash });
   }

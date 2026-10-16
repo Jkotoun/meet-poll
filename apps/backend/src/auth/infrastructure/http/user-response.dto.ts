@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { UserView } from '../../../users/users.api.js';
+import { UserDto } from '../../../users/users.api.js';
 
 export class UserResponseDto {
   @ApiProperty({ format: 'uuid' })
@@ -11,7 +11,7 @@ export class UserResponseDto {
   @ApiProperty()
   name: string;
 
-  static from({ id, email, name }: UserView): UserResponseDto {
+  static from({ id, email, name }: UserDto): UserResponseDto {
     return { id, email, name };
   }
 }
