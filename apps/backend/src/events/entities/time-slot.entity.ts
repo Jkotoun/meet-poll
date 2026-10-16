@@ -1,26 +1,33 @@
-import { defineEntity, type InferEntity, p } from '@mikro-orm/postgresql';
+import {
+  Check,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryKey,
+  Property,
+} from '@mikro-orm/decorators/legacy';
+import { Collection, type Opt, type Rel } from '@mikro-orm/postgresql';
 import { Event } from './event.entity.js';
 import { Vote } from './vote.entity.js';
 
-export const TimeSlot = defineEntity({
-  name: 'TimeSlot',
-  tableName: 'time_slots',
-  checks: [
-    {
-      name: 'time_slots_ends_after_starts_check',
-      expression: 'ends_at > starts_at',
-    },
-  ],
-  properties: {
-    id: p
-      .uuid()
-      .primary()
-      .onCreate(() => Bun.randomUUIDv7()),
-    event: () => p.manyToOne(Event).deleteRule('cascade').index(),
-    startsAt: p.datetime(),
-    endsAt: p.datetime(),
-    votes: () => p.oneToMany(Vote).mappedBy('slot'),
-  },
-});
+@Entity({ tableName: 'time_slots' })
+@Check({
+  name: 'time_slots_ends_after_starts_check',
+  expression: 'ends_at > starts_at',
+})
+export class TimeSlot {
+  @PrimaryKey({ type: 'uuid' })
+  id: Opt<string> = Bun.randomUUIDv7();
 
-export type TimeSlot = InferEntity<typeof TimeSlot>;
+  @ManyToOne(() => Event, { deleteRule: 'cascade', index: true })
+  event: Rel<Event>;
+
+  @Property({ type: 'datetime' })
+  startsAt: Date;
+
+  @Property({ type: 'datetime' })
+  endsAt: Date;
+
+  @OneToMany(() => Vote, (vote) => vote.slot)
+  votes = new Collection<Vote>(this);
+}
