@@ -1,4 +1,13 @@
-import { defineEntity, type InferEntity, p } from '@mikro-orm/postgresql';
+import {
+  Check,
+  Entity,
+  Enum,
+  ManyToOne,
+  PrimaryKey,
+  Property,
+  Unique,
+} from '@mikro-orm/decorators/legacy';
+import type { Opt, Rel } from '@mikro-orm/postgresql';
 import { User } from './user.entity.js';
 
 export enum IdentityProvider {
@@ -6,34 +15,31 @@ export enum IdentityProvider {
   Google = 'google',
 }
 
-export const Identity = defineEntity({
-  name: 'Identity',
-  tableName: 'identities',
-  uniques: [
-    { properties: ['user', 'provider'] },
-    { properties: ['provider', 'providerSubject'] },
-  ],
-  checks: [
-    {
-      name: 'identities_credentials_check',
-      expression:
-        "(provider = 'password' and password_hash is not null and provider_subject is null) or " +
-        "(provider = 'google' and provider_subject is not null and password_hash is null)",
-    },
-  ],
-  properties: {
-    id: p
-      .uuid()
-      .primary()
-      .onCreate(() => Bun.randomUUIDv7()),
-    user: () => p.manyToOne(User).deleteRule('cascade'),
-    provider: p
-      .enum(() => IdentityProvider)
-      .nativeEnumName('identity_provider'),
-    providerSubject: p.string().nullable(),
-    passwordHash: p.string().nullable(),
-    createdAt: p.datetime().onCreate(() => new Date()),
-  },
-});
+@Entity({ tableName: 'identities' })
+@Unique({ properties: ['user', 'provider'] })
+@Unique({ properties: ['provider', 'providerSubject'] })
+@Check({
+  name: 'identities_credentials_check',
+  expression:
+    "(provider = 'password' and password_hash is not null and provider_subject is null) or " +
+    "(provider = 'google' and provider_subject is not null and password_hash is null)",
+})
+export class Identity {
+  @PrimaryKey({ type: 'uuid' })
+  id: Opt<string> = Bun.randomUUIDv7();
 
-export type Identity = InferEntity<typeof Identity>;
+  @ManyToOne(() => User, { deleteRule: 'cascade' })
+  user: Rel<User>;
+
+  @Enum({ items: () => IdentityProvider, nativeEnumName: 'identity_provider' })
+  provider: IdentityProvider;
+
+  @Property({ type: 'string', nullable: true })
+  providerSubject?: string | null;
+
+  @Property({ type: 'string', nullable: true })
+  passwordHash?: string | null;
+
+  @Property({ type: 'datetime' })
+  createdAt: Opt<Date> = new Date();
+}
