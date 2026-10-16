@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'bun:test';
 import { Controller, Get, INestApplication } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
@@ -18,7 +19,9 @@ async function createApp(nodeEnv: NodeEnv): Promise<INestApplication<App>> {
   const moduleRef = await Test.createTestingModule({
     controllers: [ThingsController],
   }).compile();
-  const app = moduleRef.createNestApplication<INestApplication<App>>();
+  const app = moduleRef.createNestApplication<NestExpressApplication>({
+    bodyParser: false,
+  });
   configureApp(app, nodeEnv);
   await app.init();
   return app;

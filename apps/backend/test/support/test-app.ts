@@ -1,5 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import { App } from 'supertest/types.js';
 import { AppModule } from '../../src/app.module.js';
@@ -25,7 +26,9 @@ export async function bootApp(
     .overrideProvider(ConfigService)
     .useValue(new ConfigService(config))
     .compile();
-  const app = moduleRef.createNestApplication<INestApplication<App>>();
+  const app = moduleRef.createNestApplication<NestExpressApplication>({
+    bodyParser: false,
+  });
   configureApp(app, config.NODE_ENV);
   await app.init();
   return app;

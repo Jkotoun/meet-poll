@@ -1,12 +1,12 @@
 import { join } from 'node:path';
 import { defineConfig } from '@mikro-orm/postgresql';
-import { IdentitySchema } from '../users/infrastructure/persistence/identity.schema.js';
-import { UserSchema } from '../users/infrastructure/persistence/user.schema.js';
+import { Identity } from '../users/entities/identity.entity.js';
+import { User } from '../users/entities/user.entity.js';
 
 export function createMikroOrmOptions(databaseUrl: string) {
   return defineConfig({
     clientUrl: databaseUrl,
-    entities: [UserSchema, IdentitySchema],
+    entities: [User, Identity],
     migrations: {
       path: join(import.meta.dirname, 'migrations'),
       snapshotName: '.snapshot',

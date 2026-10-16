@@ -8,13 +8,12 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { DomainError } from '../shared/domain/domain-error.js';
 import {
   ABOUT_BLANK,
   PROBLEM_JSON,
   ProblemDetailsDto,
 } from './problem-details.dto.js';
-import { problemStatus, problemTypeUri } from './problem-types.js';
+import { ProblemException, problemTypeUri } from './problem.exception.js';
 import { RequestValidationException } from './request-validation.exception.js';
 
 interface Classification {
@@ -71,12 +70,12 @@ function toProblem(exception: unknown, instance: string): ProblemDetailsDto {
 }
 
 function classify(exception: unknown): Classification {
-  if (exception instanceof DomainError) {
+  if (exception instanceof ProblemException) {
     return {
-      status: problemStatus(exception.type),
+      status: exception.getStatus(),
       detail: exception.message,
-      type: problemTypeUri(exception.type),
-      title: exception.type.title,
+      type: problemTypeUri(exception.problemType),
+      title: exception.problemType.title,
     };
   }
   if (exception instanceof HttpException) {

@@ -1,12 +1,16 @@
-import { defineEntity, p } from '@mikro-orm/postgresql';
-import { Identity, IdentityProvider } from '../../domain/identity.js';
-import { UserSchema } from './user.schema.js';
+import { defineEntity, type InferEntity, p } from '@mikro-orm/postgresql';
+import { User } from './user.entity.js';
 
-export const IdentitySchema = defineEntity({
-  class: Identity,
+export enum IdentityProvider {
+  Password = 'password',
+  Google = 'google',
+}
+
+export const Identity = defineEntity({
+  name: 'Identity',
   tableName: 'identities',
   uniques: [
-    { properties: ['userId', 'provider'] },
+    { properties: ['user', 'provider'] },
     { properties: ['provider', 'providerSubject'] },
   ],
   checks: [
@@ -18,18 +22,18 @@ export const IdentitySchema = defineEntity({
     },
   ],
   properties: {
-    id: p.uuid().primary(),
-    userId: () =>
-      p
-        .manyToOne(UserSchema)
-        .mapToPk()
-        .fieldName('user_id')
-        .deleteRule('cascade'),
+    id: p
+      .uuid()
+      .primary()
+      .onCreate(() => Bun.randomUUIDv7()),
+    user: () => p.manyToOne(User).deleteRule('cascade'),
     provider: p
       .enum(() => IdentityProvider)
       .nativeEnumName('identity_provider'),
     providerSubject: p.string().nullable(),
     passwordHash: p.string().nullable(),
-    createdAt: p.datetime(),
+    createdAt: p.datetime().onCreate(() => new Date()),
   },
 });
+
+export type Identity = InferEntity<typeof Identity>;

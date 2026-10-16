@@ -59,6 +59,10 @@ resource "google_secret_manager_secret_version" "database_url" {
     urlencode("/cloudsql/${google_sql_database_instance.main.connection_name}"),
     google_sql_database.app.name,
   )
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "google_secret_manager_secret_iam_member" "backend" {

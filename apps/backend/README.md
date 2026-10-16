@@ -4,19 +4,18 @@ NestJS API, run with Bun. See the root README for running the whole stack.
 
 ## Layout
 
-Each feature module is split into layers; shared ORM setup lives in
-`src/database/`.
+Plain NestJS feature modules, as in the Nest docs: each feature folder holds
+its module, controller, service, DTOs (`dto/`) and MikroORM entities
+(`entities/`, defined with `defineEntity`). Services use the `EntityManager`
+directly. Shared ORM setup lives in `src/database/`.
 
 ```
 src/
-  config/              # validated env (fails fast at boot)
-  database/            # MikroORM options, Nest module, migrations
-  <feature>/
-    domain/            # plain classes + repository ports (no ORM imports)
-    application/       # services, depend only on ports
-    infrastructure/
-      persistence/     # defineEntity mappings + MikroORM port adapters
-    <feature>.module.ts
+  config/        # validated env (fails fast at boot)
+  database/      # MikroORM options, Nest module, migrations
+  http-errors/   # problem+json filter, ProblemException, validation pipe
+  users/         # User + Identity entities, UsersService
+  auth/          # register/login/logout/me, session cookie, SessionGuard
 ```
 
 ## API contract
@@ -40,6 +39,20 @@ Every error is an RFC 9457 `application/problem+json` body. Request input
 (body, query, params) is validated against class-validator DTOs; unknown
 properties are rejected, and invalid fields are listed in `errors[]` as JSON
 pointers.
+
+Expected failures are thrown as `ProblemException` with a `ProblemType`
+(status, code, title); clients get `type: /problems/<code>` to branch on, and
+`@ApiProblemResponse(...)` documents them in the spec.
+
+## Auth
+
+`POST /v1/auth/register` and `/login` set a 7-day HS256 JWT in an httpOnly, `SameSite=Lax` `session` cookie (Secure in
+production); `/logout` clears it. `SessionGuard` protects routes (import
+`AuthModule`, then use `@UseGuards(SessionGuard)` and `@CurrentUser()`); it
+loads the user on every request, so deleted accounts lose access at once.
+Wrong passwords and unknown emails get the same 401 and take the same time.
+Only JSON bodies are parsed, so HTML forms on other sites can't submit
+credentials.
 
 ## Database migrations
 

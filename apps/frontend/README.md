@@ -19,8 +19,24 @@ generated from the backend's committed `openapi.json` into
 bun run api:generate
 ```
 
+## Auth
+
+`/login` and `/register` use TanStack Form (`src/auth/form.tsx`). The backend
+validates on submit, and its problem details become field errors (`errors[]`
+pointers) or a form-level alert; `?next=` redirects only to same-origin paths.
+
+TanStack Query holds the session user; the login, register and logout
+mutations update it. `CurrentUserBoundary` reads it on the server
+(`getCurrentUser()` calls `/v1/auth/me` with the cookie) and hydrates it, so
+the nav is right in the server HTML. If the backend is unreachable, public
+pages still render and the browser fetches the user later. Protected pages
+(`/account`) check the user on the server and redirect to `/login?next=…`.
+
 ## Tests
 
 ```bash
-bun run test
+bun run test           # unit tests
+bun run test:browser   # Playwright against the full stack (needs Postgres)
 ```
+
+The browser tests start the backend (port 3101) and the built frontend (port 3100) themselves, using each app's `.env`/`.env.local`.

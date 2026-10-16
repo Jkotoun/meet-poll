@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'bun:test';
-import { Controller, Post } from '@nestjs/common';
+import { Controller, HttpStatus, Post } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { createOpenApiDocument } from '../openapi/openapi-document.js';
-import { DomainErrorKind } from '../shared/domain/domain-error.js';
 import { ApiProblemResponse } from './api-problem-response.decorator.js';
 
 @Controller('things')
@@ -10,17 +9,17 @@ class ThingsController {
   @Post()
   @ApiProblemResponse(
     {
-      kind: DomainErrorKind.Conflict,
+      status: HttpStatus.CONFLICT,
       code: 'thing-taken',
       title: 'Thing taken',
     },
     {
-      kind: DomainErrorKind.Conflict,
+      status: HttpStatus.CONFLICT,
       code: 'thing-locked',
       title: 'Thing locked',
     },
     {
-      kind: DomainErrorKind.NotFound,
+      status: HttpStatus.NOT_FOUND,
       code: 'owner-not-found',
       title: 'Owner not found',
     },
