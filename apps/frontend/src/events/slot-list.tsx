@@ -5,6 +5,7 @@ import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import type { components } from '@/api/schema';
 import { formatTimeRange, groupByDay } from './slots';
+import { VoteControl } from './vote-control';
 
 type EventDto = components['schemas']['EventDto'];
 
@@ -20,11 +21,23 @@ export function SlotList({ event }: SlotListProps) {
       </Typography>
       <Paper variant="outlined">
         <List disablePadding>
-          {day.slots.map((slot) => (
-            <ListItem key={slot.id} divider>
-              <ListItemText primary={formatTimeRange(slot, event.timezone)} />
-            </ListItem>
-          ))}
+          {day.slots.map((slot) => {
+            const time = formatTimeRange(slot, event.timezone);
+            return (
+              <ListItem key={slot.id} divider className="flex-wrap gap-2">
+                <ListItemText
+                  primary={time}
+                  secondary={`${slot.yes} yes · ${slot.ifNeedBe} if need be · ${slot.no} no`}
+                />
+                <VoteControl
+                  slug={event.slug}
+                  slotId={slot.id}
+                  choice={slot.myChoice}
+                  slotLabel={`${day.label}, ${time}`}
+                />
+              </ListItem>
+            );
+          })}
         </List>
       </Paper>
     </section>

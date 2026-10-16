@@ -1,5 +1,6 @@
 import { defineEntity, type InferEntity, p } from '@mikro-orm/postgresql';
 import { Event } from './event.entity.js';
+import { Vote } from './vote.entity.js';
 
 export const TimeSlot = defineEntity({
   name: 'TimeSlot',
@@ -18,6 +19,7 @@ export const TimeSlot = defineEntity({
     event: () => p.manyToOne(Event).deleteRule('cascade').index(),
     startsAt: p.datetime(),
     endsAt: p.datetime(),
+    votes: () => p.oneToMany(Vote).mappedBy('slot'),
   },
 });
 

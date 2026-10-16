@@ -425,6 +425,108 @@
         "tags": ["events"]
       }
     },
+    "/v1/events/{slug}/slots/{slotId}/vote": {
+      "put": {
+        "operationId": "Events_vote",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "slotId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemBaseDto"
+                    },
+                    {
+                      "type": "object",
+                      "required": ["type"],
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": ["/problems/unauthenticated"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemBaseDto"
+                    },
+                    {
+                      "type": "object",
+                      "required": ["type"],
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": ["/problems/slot-not-found"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "tags": ["events"]
+      }
+    },
     "/health": {
       "get": {
         "operationId": "Health_check",
@@ -582,6 +684,11 @@
         },
         "required": ["id", "name"]
       },
+      "VoteChoice": {
+        "type": "string",
+        "enum": ["yes", "if_need_be", "no"],
+        "description": "The viewer's own vote"
+      },
       "TimeSlotDto": {
         "type": "object",
         "properties": {
@@ -596,9 +703,35 @@
           "endsAt": {
             "format": "date-time",
             "type": "string"
+          },
+          "yes": {
+            "type": "number"
+          },
+          "ifNeedBe": {
+            "type": "number"
+          },
+          "no": {
+            "type": "number"
+          },
+          "myChoice": {
+            "nullable": true,
+            "description": "The viewer's own vote",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/VoteChoice"
+              }
+            ]
           }
         },
-        "required": ["id", "startsAt", "endsAt"]
+        "required": [
+          "id",
+          "startsAt",
+          "endsAt",
+          "yes",
+          "ifNeedBe",
+          "no",
+          "myChoice"
+        ]
       },
       "EventDto": {
         "type": "object",
@@ -653,6 +786,19 @@
           }
         },
         "required": ["slug", "title", "createdAt"]
+      },
+      "VoteDto": {
+        "type": "object",
+        "properties": {
+          "choice": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/VoteChoice"
+              }
+            ]
+          }
+        },
+        "required": ["choice"]
       },
       "HealthStatus": {
         "type": "string",

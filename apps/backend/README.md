@@ -16,7 +16,7 @@ src/
   http-errors/   # problem+json filter, ProblemException, validation pipe
   users/         # User + Identity entities, UsersService
   auth/          # register/login/logout/me, session cookie, SessionGuard
-  events/        # Event + TimeSlot entities, create/get/list endpoints
+  events/        # Event, TimeSlot and Vote entities; events and voting endpoints
   common/        # small shared helpers (DTO transforms)
 ```
 

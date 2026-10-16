@@ -7,11 +7,19 @@ import {
 import type { User } from '../users/entities/user.entity.js';
 import { CreateEventDto } from './dto/create-event.dto.js';
 import { Event } from './entities/event.entity.js';
+import { TimeSlot } from './entities/time-slot.entity.js';
+import { Vote, VoteChoice } from './entities/vote.entity.js';
 
 export const EVENT_NOT_FOUND: ProblemType = {
   status: HttpStatus.NOT_FOUND,
   code: 'event-not-found',
   title: 'Event not found',
+};
+
+export const SLOT_NOT_FOUND: ProblemType = {
+  status: HttpStatus.NOT_FOUND,
+  code: 'slot-not-found',
+  title: 'Slot not found',
 };
 
 @Injectable()
@@ -45,7 +53,7 @@ export class EventsService {
     const event = await this.em.findOne(
       Event,
       { slug },
-      { populate: ['organizer', 'slots'] },
+      { populate: ['organizer', 'slots.votes'] },
     );
     if (!event) {
       throw new ProblemException(
@@ -62,5 +70,21 @@ export class EventsService {
       { organizer },
       { orderBy: { createdAt: 'desc' } },
     );
+  }
+
+  async vote(
+    voter: User,
+    slug: string,
+    slotId: string,
+    choice: VoteChoice,
+  ): Promise<void> {
+    const slot = await this.em.findOne(TimeSlot, {
+      id: slotId,
+      event: { slug },
+    });
+    if (!slot) {
+      throw new ProblemException(SLOT_NOT_FOUND, 'This event has no such slot');
+    }
+    await this.em.upsert(Vote, { slot, voter, choice });
   }
 }

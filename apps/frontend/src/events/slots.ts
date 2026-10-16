@@ -1,22 +1,26 @@
-import type { components } from '@/api/schema';
+interface TimeRange {
+  startsAt: string;
+  endsAt: string;
+}
 
-export type TimeSlot = components['schemas']['TimeSlotDto'];
-
-interface Day {
+interface Day<T> {
   label: string;
-  slots: TimeSlot[];
+  slots: T[];
 }
 
 // A fixed locale, so server and browser render the same text.
 const LOCALE = 'en-GB';
 
 // Days are the event's calendar days; slots arrive sorted by start.
-export function groupByDay(slots: TimeSlot[], timeZone: string): Day[] {
+export function groupByDay<T extends TimeRange>(
+  slots: T[],
+  timeZone: string,
+): Day<T>[] {
   const dayFormat = new Intl.DateTimeFormat(LOCALE, {
     timeZone,
     dateStyle: 'full',
   });
-  const days = new Map<string, TimeSlot[]>();
+  const days = new Map<string, T[]>();
   for (const slot of slots) {
     const label = dayFormat.format(new Date(slot.startsAt));
     days.set(label, [...(days.get(label) ?? []), slot]);
@@ -25,7 +29,7 @@ export function groupByDay(slots: TimeSlot[], timeZone: string): Day[] {
 }
 
 // Not `formatRange`: its separator differs between ICU builds (macOS vs Linux).
-export function formatTimeRange(slot: TimeSlot, timeZone: string): string {
+export function formatTimeRange(slot: TimeRange, timeZone: string): string {
   const time = new Intl.DateTimeFormat(LOCALE, {
     timeZone,
     hour: '2-digit',
