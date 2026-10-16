@@ -8,12 +8,21 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { DomainError } from '../shared/domain/domain-error.js';
 import {
   ABOUT_BLANK,
   PROBLEM_JSON,
   ProblemDetailsDto,
 } from './problem-details.dto.js';
+import { problemStatus, problemTypeUri } from './problem-types.js';
 import { RequestValidationException } from './request-validation.exception.js';
+
+interface Classification {
+  status: number;
+  detail?: string;
+  type?: string;
+  title?: string;
+}
 
 interface ClientError {
   status: number;
@@ -43,14 +52,13 @@ export class ProblemDetailsFilter implements ExceptionFilter {
 }
 
 function toProblem(exception: unknown, instance: string): ProblemDetailsDto {
-  const { status, detail } = classify(exception);
-  const title = STATUS_CODES[status] ?? 'Error';
-  const problem: ProblemDetailsDto = {
-    type: ABOUT_BLANK,
-    title,
+  const {
     status,
-    instance,
-  };
+    detail,
+    type = ABOUT_BLANK,
+    title = STATUS_CODES[status] ?? 'Error',
+  } = classify(exception);
+  const problem: ProblemDetailsDto = { type, title, status, instance };
 
   // Exceptions created without a message carry the status phrase as their message.
   if (detail && detail !== title) {
@@ -62,7 +70,15 @@ function toProblem(exception: unknown, instance: string): ProblemDetailsDto {
   return problem;
 }
 
-function classify(exception: unknown): { status: number; detail?: string } {
+function classify(exception: unknown): Classification {
+  if (exception instanceof DomainError) {
+    return {
+      status: problemStatus(exception.type),
+      detail: exception.message,
+      type: problemTypeUri(exception.type),
+      title: exception.type.title,
+    };
+  }
   if (exception instanceof HttpException) {
     return {
       status: exception.getStatus(),

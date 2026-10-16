@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { createApiClient } from './client';
 
 const notFound = {
-  type: 'about:blank',
+  type: 'about:blank' as const,
   title: 'Not Found',
   status: 404,
   instance: '/health',

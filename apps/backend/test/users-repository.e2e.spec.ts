@@ -1,5 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { MikroORM } from '@mikro-orm/postgresql';
+import {
+  EMAIL_ALREADY_REGISTERED,
+  EmailAlreadyRegisteredError,
+} from '../src/users/domain/email-already-registered.error.js';
 import { User } from '../src/users/domain/user.js';
 import { MikroOrmUserRepository } from '../src/users/infrastructure/persistence/mikro-orm-user.repository.js';
 import { createTestApp, TestApp } from './support/test-app.js';
@@ -64,17 +68,35 @@ describe('Users persistence (e2e)', () => {
       expect(loaded?.email).toBe('grace@example.com');
     });
 
+    it('reports a taken email as a domain error', async () => {
+      await repository().save(newUser('linus@example.com'));
+
+      const error = await rejectionOf(
+        repository().save(newUser('Linus@Example.com')),
+      );
+
+      expect(error).toBeInstanceOf(EmailAlreadyRegisteredError);
+      expect(error).toMatchObject({
+        name: 'EmailAlreadyRegisteredError',
+        type: EMAIL_ALREADY_REGISTERED,
+      });
+    });
+
     it('returns null for an unknown email', async () => {
       expect(await repository().findByEmail('nobody@example.com')).toBeNull();
     });
   });
 
   describe('schema constraints', () => {
-    it('rejects a second user with the same email', async () => {
-      await repository().save(newUser('alan@example.com'));
+    it('enforces one user per email', async () => {
+      const user = newUser('alan@example.com');
+      await repository().save(user);
 
       const error = await rejectionOf(
-        repository().save(newUser('alan@example.com')),
+        execute(
+          `insert into users (id, email, name, created_at) values (?, ?, 'Alan', now())`,
+          [Bun.randomUUIDv7(), user.email],
+        ),
       );
 
       expect(String(error)).toContain('users_email_unique');

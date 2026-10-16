@@ -1,9 +1,11 @@
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
+import { isUniqueViolation } from '../../../database/unique-violation.js';
 import { normalizeEmail } from '../../domain/email.js';
+import { EmailAlreadyRegisteredError } from '../../domain/email-already-registered.error.js';
 import { User } from '../../domain/user.js';
 import { UserRepository } from '../../domain/user.repository.js';
-import { UserSchema } from './user.schema.js';
+import { USERS_EMAIL_UNIQUE, UserSchema } from './user.schema.js';
 
 @Injectable()
 export class MikroOrmUserRepository extends UserRepository {
@@ -12,7 +14,14 @@ export class MikroOrmUserRepository extends UserRepository {
   }
 
   async save(user: User): Promise<void> {
-    await this.em.persist(user).flush();
+    try {
+      await this.em.persist(user).flush();
+    } catch (error) {
+      if (isUniqueViolation(error, USERS_EMAIL_UNIQUE)) {
+        throw new EmailAlreadyRegisteredError();
+      }
+      throw error;
+    }
   }
 
   findByEmail(email: string): Promise<User | null> {

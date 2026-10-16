@@ -11,10 +11,8 @@ export class InvalidFieldDto {
   detail: string;
 }
 
-export class ProblemDetailsDto {
-  @ApiProperty({ example: ABOUT_BLANK })
-  type: string;
-
+// Members shared by every problem; `type` is added per problem kind so clients can narrow on it.
+export class ProblemBaseDto {
   @ApiProperty({ example: 'Bad Request' })
   title: string;
 
@@ -29,4 +27,9 @@ export class ProblemDetailsDto {
 
   @ApiPropertyOptional({ type: [InvalidFieldDto] })
   errors?: InvalidFieldDto[];
+}
+
+export class ProblemDetailsDto extends ProblemBaseDto {
+  @ApiProperty({ enum: [ABOUT_BLANK] })
+  type: string;
 }
