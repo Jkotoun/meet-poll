@@ -39,7 +39,8 @@ Pages under `/events` are server components that call the backend directly
 with the visitor's cookies (`serverApi()`); forms post through the `/api`
 proxy and navigate on success. Slot times are entered in the browser's time
 zone, which becomes the event's, and shown grouped by day in that zone with
-a fixed locale, so server and browser render the same text.
+a fixed locale, so server and browser render the same text. A vote is saved
+on click (shown optimistically), then `router.refresh()` reloads the tallies.
 
 ## Tests
 

@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { expect, registerViaApi, test } from './fixtures';
+import { createEventViaApi, expect, registerViaApi, test } from './fixtures';
 
 // The browser's time zone becomes the event's, so pin it for stable text.
 test.use({ timezoneId: 'Europe/Prague' });
@@ -60,4 +60,20 @@ test('sends a signed-out visitor of an event link to log in first', async ({
   await page.goto('/events/abcdefghijkl');
 
   await expect(page).toHaveURL('/login?next=/events/abcdefghijkl');
+});
+
+test('votes on a slot and sees the tally', async ({ page, request }) => {
+  await registerViaApi(request, { name: 'Ada Lovelace' });
+  const eventPath = await createEventViaApi(request);
+  await registerViaApi(page.request, { name: 'Grace Hopper' });
+  await page.goto(eventPath);
+
+  const noon = page.getByRole('listitem').filter({ hasText: '12:00 – 13:00' });
+  await noon.getByRole('button', { name: 'If need be' }).click();
+
+  await expect(noon).toContainText('0 yes · 1 if need be · 0 no');
+  await page.reload();
+  await expect(
+    noon.getByRole('button', { name: 'If need be' }),
+  ).toHaveAttribute('aria-pressed', 'true');
 });

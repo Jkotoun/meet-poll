@@ -1,7 +1,19 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiCookieAuth,
   ApiCreatedResponse,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -12,7 +24,12 @@ import { ApiProblemResponse } from '../http-errors/api-problem-response.decorato
 import type { User } from '../users/entities/user.entity.js';
 import { CreateEventDto } from './dto/create-event.dto.js';
 import { EventDto, EventSummaryDto } from './dto/event.dto.js';
-import { EVENT_NOT_FOUND, EventsService } from './events.service.js';
+import { VoteDto } from './dto/vote.dto.js';
+import {
+  EVENT_NOT_FOUND,
+  EventsService,
+  SLOT_NOT_FOUND,
+} from './events.service.js';
 
 @ApiTags('events')
 @ApiCookieAuth(SESSION_COOKIE)
@@ -28,7 +45,7 @@ export class EventsController {
     @CurrentUser() user: User,
     @Body() body: CreateEventDto,
   ): Promise<EventDto> {
-    return EventDto.from(await this.events.create(user, body));
+    return EventDto.from(await this.events.create(user, body), user.id);
   }
 
   @Get()
@@ -42,7 +59,23 @@ export class EventsController {
   @Get(':slug')
   @ApiOkResponse({ type: EventDto })
   @ApiProblemResponse(UNAUTHENTICATED, EVENT_NOT_FOUND)
-  async findOne(@Param('slug') slug: string): Promise<EventDto> {
-    return EventDto.from(await this.events.findBySlug(slug));
+  async findOne(
+    @CurrentUser() user: User,
+    @Param('slug') slug: string,
+  ): Promise<EventDto> {
+    return EventDto.from(await this.events.findBySlug(slug), user.id);
+  }
+
+  @Put(':slug/slots/:slotId/vote')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiNoContentResponse()
+  @ApiProblemResponse(UNAUTHENTICATED, SLOT_NOT_FOUND)
+  async vote(
+    @CurrentUser() user: User,
+    @Param('slug') slug: string,
+    @Param('slotId', ParseUUIDPipe) slotId: string,
+    @Body() { choice }: VoteDto,
+  ): Promise<void> {
+    await this.events.vote(user, slug, slotId, choice);
   }
 }
