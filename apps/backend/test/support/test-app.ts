@@ -1,9 +1,11 @@
 import { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import { App } from 'supertest/types.js';
 import { AppModule } from '../../src/app.module.js';
 import { validateEnvironment } from '../../src/config/environment.js';
+import { configureApp } from '../../src/configure-app.js';
 import { createTestDatabase, TestDatabase } from './test-database.js';
 
 export interface TestApp {
@@ -24,7 +26,10 @@ export async function bootApp(
     .overrideProvider(ConfigService)
     .useValue(new ConfigService(config))
     .compile();
-  const app = moduleRef.createNestApplication<INestApplication<App>>();
+  const app = moduleRef.createNestApplication<NestExpressApplication>({
+    bodyParser: false,
+  });
+  configureApp(app, config.NODE_ENV);
   await app.init();
   return app;
 }

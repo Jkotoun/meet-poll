@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend
 
-## Getting Started
+Next.js (App Router) on Bun. See the root README for running the whole stack.
 
-First, run the development server:
+## Talking to the backend
+
+The browser only calls `/api/*` on the frontend's own origin. `src/proxy.ts`
+rewrites those requests to `BACKEND_URL` (read at runtime, required at
+startup) with the `/api` prefix removed; Next forwards them and gives up after
+30s. This avoids CORS, and cookies set by the backend stay first-party.
+
+`src/api/client.ts` creates the typed client (`openapi-fetch`): browser code
+uses base URL `/api`, server code calls `backendUrl()` directly. Its types are
+generated from the backend's committed `openapi.json` into
+`src/api/schema.d.ts` (gitignored); Turbo regenerates them before `dev`,
+`build` (and so `lint`/`typecheck`) and `test`, or run it by hand:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+bun run api:generate
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Auth
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+`/login` and `/register` use TanStack Form (shared pieces in `src/forms/form.tsx`). The backend
+validates on submit, and its problem details become field errors (`errors[]`
+pointers) or a form-level alert; `?next=` redirects only to same-origin paths.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+TanStack Query holds the session user; the login, register and logout
+mutations update it. `CurrentUserBoundary` reads it on the server
+(`getCurrentUser()` calls `/v1/auth/me` with the cookie) and hydrates it, so
+the nav is right in the server HTML. If the backend is unreachable, public
+pages still render and the browser fetches the user later. Protected pages
+(`/account`, `/events/**`) call `requireUser()` on the server, which redirects
+to `/login?next=…`.
 
-## Learn More
+## Events
 
-To learn more about Next.js, take a look at the following resources:
+Pages under `/events` are server components that call the backend directly
+with the visitor's cookies (`serverApi()`); forms post through the `/api`
+proxy and navigate on success. Slot times are entered in the browser's time
+zone, which becomes the event's, and shown grouped by day in that zone with
+a fixed locale, so server and browser render the same text. A vote is saved
+on click (shown optimistically), then `router.refresh()` reloads the tallies.
+The organizer picks the final time from a ranked list (ranks come from the
+backend); after that the page shows the final time and voting is disabled.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Tests
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+bun run test           # unit tests
+bun run test:browser   # Playwright against the full stack (needs Postgres)
+```
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The browser tests start the backend (port 3101) and the built frontend (port 3100) themselves, using each app's `.env`/`.env.local`.

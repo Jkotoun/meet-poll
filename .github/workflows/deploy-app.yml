@@ -15,6 +15,10 @@ on:
         description: Secret Manager env bindings for --update-secrets (ENV=secret:version,...).
         type: string
         default: ''
+      env_vars:
+        description: Plain env vars for --update-env-vars (NAME=value,...).
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -54,9 +58,11 @@ jobs:
         id: deploy
         env:
           SECRETS: ${{ inputs.secrets }}
+          ENV_VARS: ${{ inputs.env_vars }}
         run: |
           gcloud run deploy "$SERVICE" --region "$REGION" --image "$IMAGE" --no-traffic --quiet \
-            ${SECRETS:+--update-secrets "$SECRETS"}
+            ${SECRETS:+--update-secrets "$SECRETS"} \
+            ${ENV_VARS:+--update-env-vars "$ENV_VARS"}
           revision=$(gcloud run services describe "$SERVICE" --region "$REGION" \
             --format='value(status.latestCreatedRevisionName)')
           echo "revision=$revision" >> "$GITHUB_OUTPUT"

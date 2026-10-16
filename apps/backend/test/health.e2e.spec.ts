@@ -19,4 +19,11 @@ describe('HealthController (e2e)', () => {
       .expect(200)
       .expect({ status: 'ok' });
   });
+
+  it('is not versioned', () => {
+    return request(testApp.app.getHttpServer())
+      .get('/v1/health')
+      .expect(404)
+      .expect('Content-Type', /application\/problem\+json/);
+  });
 });

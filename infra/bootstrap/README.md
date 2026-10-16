@@ -25,15 +25,16 @@ cd ../main && terraform init
 
 Store the bootstrap outputs as GitHub repository variables:
 
-| Variable           | Output                       |
-| ------------------ | ---------------------------- |
-| `GCP_PROJECT_ID`   | — (`terraform.tfvars`)       |
-| `GCP_REGION`       | — (`terraform.tfvars`)       |
-| `GCP_WIF_PROVIDER` | `workload_identity_provider` |
-| `GCP_PLANNER_SA`   | `planner_service_account`    |
-| `GCP_TERRAFORM_SA` | `terraform_service_account`  |
-| `GCP_DEPLOYER_SA`  | `deployer_service_account`   |
-| `GCP_STATE_BUCKET` | `state_bucket`               |
+| Variable           | Output                                                            |
+| ------------------ | ----------------------------------------------------------------- |
+| `GCP_PROJECT_ID`   | — (`terraform.tfvars`)                                            |
+| `GCP_REGION`       | — (`terraform.tfvars`)                                            |
+| `GCP_WIF_PROVIDER` | `workload_identity_provider`                                      |
+| `GCP_PLANNER_SA`   | `planner_service_account`                                         |
+| `GCP_TERRAFORM_SA` | `terraform_service_account`                                       |
+| `GCP_DEPLOYER_SA`  | `deployer_service_account`                                        |
+| `GCP_STATE_BUCKET` | `state_bucket`                                                    |
+| `BACKEND_URL`      | `infra/main` output `service_urls.backend`, after its first apply |
 
 ## Service accounts
 

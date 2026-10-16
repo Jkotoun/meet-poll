@@ -40,3 +40,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 !.env.example
+
+# generated from apps/backend/openapi.json
+/src/api/schema.d.ts
+
+# playwright
+/test-results/
+/playwright-report/

@@ -1,0 +1,195 @@
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
+import { MikroORM } from '@mikro-orm/postgresql';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import request from 'supertest';
+import {
+  newEmail,
+  PASSWORD,
+  registerAccount,
+  sessionCookie,
+} from './support/accounts.js';
+import { createTestApp, TestApp } from './support/test-app.js';
+
+describe('Auth session (e2e)', () => {
+  let testApp: TestApp;
+
+  beforeAll(async () => {
+    testApp = await createTestApp();
+  });
+
+  afterAll(async () => {
+    await testApp.close();
+  });
+
+  function server() {
+    return testApp.app.getHttpServer();
+  }
+
+  function me(cookie?: string) {
+    const test = request(server()).get('/v1/auth/me');
+    return cookie ? test.set('Cookie', cookie) : test;
+  }
+
+  function signedToken(secret: string, claims: object): string {
+    return new JwtService({ secret }).sign(claims);
+  }
+
+  it('starts a session on register', async () => {
+    const account = await registerAccount(server());
+
+    const response = await me(account.cookie)
+      .expect(200)
+      .expect('Cache-Control', 'no-store');
+
+    expect(response.body).toEqual({
+      id: account.id,
+      email: account.email,
+      name: 'Ada',
+    });
+  });
+
+  it('starts a session on login that /me accepts', async () => {
+    const account = await registerAccount(server());
+
+    const login = await request(server())
+      .post('/v1/auth/login')
+      .send({ email: account.email, password: PASSWORD })
+      .expect(200);
+    const response = await me(sessionCookie(login).split(';')[0]).expect(200);
+
+    expect(response.body.id).toBe(account.id);
+  });
+
+  it('logs in with the email in any case', async () => {
+    const account = await registerAccount(server());
+
+    const response = await request(server())
+      .post('/v1/auth/login')
+      .send({ email: account.email.toUpperCase(), password: PASSWORD })
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      id: account.id,
+      email: account.email,
+    });
+  });
+
+  it('sets an httpOnly, SameSite=Lax session cookie', async () => {
+    const account = await registerAccount(server());
+
+    const response = await request(server())
+      .post('/v1/auth/login')
+      .send({ email: account.email, password: PASSWORD })
+      .expect(200);
+
+    const cookie = sessionCookie(response);
+    expect(cookie).toContain('HttpOnly');
+    expect(cookie).toContain('SameSite=Lax');
+    expect(cookie).toContain('Path=/');
+    expect(cookie).toContain('Max-Age=604800');
+  });
+
+  it('answers a wrong password and an unknown email identically', async () => {
+    const account = await registerAccount(server());
+
+    const wrongPassword = await request(server())
+      .post('/v1/auth/login')
+      .send({ email: account.email, password: 'not the password' })
+      .expect(401);
+    const unknownEmail = await request(server())
+      .post('/v1/auth/login')
+      .send({ email: newEmail(), password: PASSWORD })
+      .expect(401);
+
+    const expected = {
+      type: '/problems/invalid-credentials',
+      title: 'Invalid credentials',
+      status: 401,
+      detail: 'The email or password is incorrect',
+      instance: '/v1/auth/login',
+    };
+    expect(wrongPassword.body).toEqual(expected);
+    expect(unknownEmail.body).toEqual(expected);
+    expect(wrongPassword.get('Set-Cookie')).toBeUndefined();
+  });
+
+  it('ignores form-encoded bodies, so cross-site forms cannot log in', async () => {
+    const account = await registerAccount(server());
+
+    await request(server())
+      .post('/v1/auth/login')
+      .type('form')
+      .send({ email: account.email, password: PASSWORD })
+      .expect(400);
+  });
+
+  it('requires a session for /me', async () => {
+    const response = await me().expect(401);
+
+    expect(response.body).toMatchObject({
+      type: '/problems/unauthenticated',
+      title: 'Authentication required',
+    });
+  });
+
+  it('rejects a tampered token', async () => {
+    const { cookie } = await registerAccount(server());
+
+    await me(`${cookie.slice(0, -2)}xx`).expect(401);
+  });
+
+  it('rejects a token signed with another secret', async () => {
+    const { id } = await registerAccount(server());
+    const token = signedToken('another-secret-of-at-least-32-chars', {
+      sub: id,
+    });
+
+    await me(`session=${token}`).expect(401);
+  });
+
+  it('rejects an expired token', async () => {
+    const { id } = await registerAccount(server());
+    const token = signedToken(
+      testApp.app.get(ConfigService).getOrThrow('JWT_SECRET'),
+      {
+        sub: id,
+        exp: Math.floor(Date.now() / 1000) - 60,
+      },
+    );
+
+    await me(`session=${token}`).expect(401);
+  });
+
+  it('ends the session of a deleted user', async () => {
+    const account = await registerAccount(server());
+    await testApp.app
+      .get(MikroORM)
+      .em.getConnection()
+      .execute('delete from users where id = ?', [account.id]);
+
+    await me(account.cookie).expect(401);
+  });
+
+  it('rejects an empty login request', async () => {
+    const response = await request(server())
+      .post('/v1/auth/login')
+      .send({})
+      .expect(400);
+
+    const pointers = response.body.errors.map(
+      (error: { pointer: string }) => error.pointer,
+    );
+    expect(pointers).toEqual(expect.arrayContaining(['#/email', '#/password']));
+  });
+
+  it('clears the session cookie on logout', async () => {
+    const response = await request(server())
+      .post('/v1/auth/logout')
+      .expect(204);
+
+    const cookie = sessionCookie(response);
+    expect(cookie).toContain('session=;');
+    expect(cookie).toContain('Expires=Thu, 01 Jan 1970');
+  });
+});

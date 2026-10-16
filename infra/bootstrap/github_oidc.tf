@@ -25,7 +25,11 @@ resource "google_iam_workload_identity_pool_provider" "github" {
 locals {
   pool = "iam.googleapis.com/${google_iam_workload_identity_pool.github.name}"
 
+  # The repo uses GitHub's immutable subject format: owner and repo with their numeric IDs.
+  repository_parts = split("/", var.github_repository)
+  subject_prefix   = "repo:${local.repository_parts[0]}@${var.github_owner_id}/${local.repository_parts[1]}@${var.github_repository_id}"
+
   any_workflow  = "principalSet://${local.pool}/*"
-  prod_env_jobs = "principal://${local.pool}/subject/repo:${var.github_repository}:environment:prod"
-  main_jobs     = "principal://${local.pool}/subject/repo:${var.github_repository}:ref:refs/heads/main"
+  prod_env_jobs = "principal://${local.pool}/subject/${local.subject_prefix}:environment:prod"
+  main_jobs     = "principal://${local.pool}/subject/${local.subject_prefix}:ref:refs/heads/main"
 }
