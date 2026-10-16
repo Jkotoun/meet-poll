@@ -65,13 +65,13 @@ export function FormField({ field, ...props }: FormFieldProps) {
   );
 }
 
-interface AuthFormProps {
+interface SubmitFormProps {
   form: AnyFormApi;
   submitLabel: string;
   children: ReactNode;
 }
 
-export function AuthForm({ form, submitLabel, children }: AuthFormProps) {
+export function SubmitForm({ form, submitLabel, children }: SubmitFormProps) {
   const formError = useStore(form.store, (state) => state.errorMap.onSubmit);
   // Stays disabled after success, while the redirect is in flight.
   const busy = useStore(

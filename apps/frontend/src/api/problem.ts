@@ -56,7 +56,10 @@ export function toFormErrors(
   }
   const hasFieldErrors = Object.keys(fields).length > 0;
   return {
-    form: hasFieldErrors ? undefined : (problem.detail ?? problem.title),
+    // An error for a field the form doesn't show still beats a generic detail.
+    form: hasFieldErrors
+      ? undefined
+      : (problem.errors?.[0]?.detail ?? problem.detail ?? problem.title),
     fields,
   };
 }

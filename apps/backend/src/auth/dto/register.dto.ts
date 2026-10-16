@@ -7,7 +7,7 @@ import {
   Length,
   MaxLength,
 } from 'class-validator';
-import { normalizeEmail, trim } from './transforms.js';
+import { normalizeEmail, trim } from '../../common/transforms.js';
 
 export class RegisterDto {
   @ApiProperty({ format: 'email', maxLength: 254, example: 'ada@example.com' })

@@ -21,7 +21,7 @@ bun run api:generate
 
 ## Auth
 
-`/login` and `/register` use TanStack Form (`src/auth/form.tsx`). The backend
+`/login` and `/register` use TanStack Form (shared pieces in `src/forms/form.tsx`). The backend
 validates on submit, and its problem details become field errors (`errors[]`
 pointers) or a form-level alert; `?next=` redirects only to same-origin paths.
 
@@ -30,7 +30,16 @@ mutations update it. `CurrentUserBoundary` reads it on the server
 (`getCurrentUser()` calls `/v1/auth/me` with the cookie) and hydrates it, so
 the nav is right in the server HTML. If the backend is unreachable, public
 pages still render and the browser fetches the user later. Protected pages
-(`/account`) check the user on the server and redirect to `/login?next=…`.
+(`/account`, `/events/**`) call `requireUser()` on the server, which redirects
+to `/login?next=…`.
+
+## Events
+
+Pages under `/events` are server components that call the backend directly
+with the visitor's cookies (`serverApi()`); forms post through the `/api`
+proxy and navigate on success. Slot times are entered in the browser's time
+zone, which becomes the event's, and shown grouped by day in that zone with
+a fixed locale, so server and browser render the same text.
 
 ## Tests
 

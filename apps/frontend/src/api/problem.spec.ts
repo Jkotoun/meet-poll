@@ -67,7 +67,7 @@ describe('toFormErrors', () => {
     };
 
     expect(toFormErrors(problem, ['email'])).toEqual({
-      form: 'Bad Request',
+      form: 'property isAdmin should not exist',
       fields: {},
     });
   });
