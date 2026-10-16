@@ -69,6 +69,7 @@ describe('Events (e2e)', () => {
       timezone: 'Europe/Prague',
       createdAt: expect.any(String),
       organizer: { id: ada.id, name: 'Ada' },
+      finalizedSlotId: null,
       slots: [
         {
           id: expect.any(String),
@@ -78,6 +79,7 @@ describe('Events (e2e)', () => {
           ifNeedBe: 0,
           no: 0,
           myChoice: null,
+          rank: 1,
         },
         {
           id: expect.any(String),
@@ -87,6 +89,7 @@ describe('Events (e2e)', () => {
           ifNeedBe: 0,
           no: 0,
           myChoice: null,
+          rank: 1,
         },
       ],
     });
@@ -117,11 +120,13 @@ describe('Events (e2e)', () => {
         slug: second.body.slug,
         title: 'Second',
         createdAt: second.body.createdAt,
+        finalized: false,
       },
       {
         slug: first.body.slug,
         title: 'First',
         createdAt: first.body.createdAt,
+        finalized: false,
       },
     ]);
   });

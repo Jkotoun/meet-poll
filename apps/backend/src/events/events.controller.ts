@@ -24,10 +24,13 @@ import { ApiProblemResponse } from '../http-errors/api-problem-response.decorato
 import type { User } from '../users/entities/user.entity.js';
 import { CreateEventDto } from './dto/create-event.dto.js';
 import { EventDto, EventSummaryDto } from './dto/event.dto.js';
+import { FinalizeDto } from './dto/finalize.dto.js';
 import { VoteDto } from './dto/vote.dto.js';
 import {
+  EVENT_FINALIZED,
   EVENT_NOT_FOUND,
   EventsService,
+  NOT_ORGANIZER,
   SLOT_NOT_FOUND,
 } from './events.service.js';
 
@@ -69,7 +72,7 @@ export class EventsController {
   @Put(':slug/slots/:slotId/vote')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiNoContentResponse()
-  @ApiProblemResponse(UNAUTHENTICATED, SLOT_NOT_FOUND)
+  @ApiProblemResponse(UNAUTHENTICATED, SLOT_NOT_FOUND, EVENT_FINALIZED)
   async vote(
     @CurrentUser() user: User,
     @Param('slug') slug: string,
@@ -77,5 +80,22 @@ export class EventsController {
     @Body() { choice }: VoteDto,
   ): Promise<void> {
     await this.events.vote(user, slug, slotId, choice);
+  }
+
+  @Post(':slug/finalize')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiNoContentResponse({ description: 'Finalized, or already on this slot' })
+  @ApiProblemResponse(
+    UNAUTHENTICATED,
+    NOT_ORGANIZER,
+    SLOT_NOT_FOUND,
+    EVENT_FINALIZED,
+  )
+  async finalize(
+    @CurrentUser() user: User,
+    @Param('slug') slug: string,
+    @Body() { slotId }: FinalizeDto,
+  ): Promise<void> {
+    await this.events.finalize(user, slug, slotId);
   }
 }

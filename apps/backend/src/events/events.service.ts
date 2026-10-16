@@ -22,6 +22,18 @@ export const SLOT_NOT_FOUND: ProblemType = {
   title: 'Slot not found',
 };
 
+export const NOT_ORGANIZER: ProblemType = {
+  status: HttpStatus.FORBIDDEN,
+  code: 'not-organizer',
+  title: 'Only the organizer can do this',
+};
+
+export const EVENT_FINALIZED: ProblemType = {
+  status: HttpStatus.CONFLICT,
+  code: 'event-finalized',
+  title: 'Event already finalized',
+};
+
 @Injectable()
 export class EventsService {
   constructor(private readonly em: EntityManager) {}
@@ -78,13 +90,54 @@ export class EventsService {
     slotId: string,
     choice: VoteChoice,
   ): Promise<void> {
-    const slot = await this.em.findOne(TimeSlot, {
-      id: slotId,
-      event: { slug },
-    });
+    const slot = await this.findSlot(slug, slotId);
+    // A read, not a lock: a vote racing the finalize may land, which is
+    // harmless since the pick is already made.
+    if (slot.event.finalizedSlot) {
+      throw new ProblemException(
+        EVENT_FINALIZED,
+        'Voting has closed: the organizer picked a time',
+      );
+    }
+    await this.em.upsert(Vote, { slot, voter, choice });
+  }
+
+  async finalize(user: User, slug: string, slotId: string): Promise<void> {
+    const slot = await this.findSlot(slug, slotId);
+    const event = slot.event;
+    if (event.organizer.id !== user.id) {
+      throw new ProblemException(
+        NOT_ORGANIZER,
+        'Only the organizer can pick the final time',
+      );
+    }
+    // One conditional update: repeating the same pick is a no-op, and of two
+    // racing picks only the first can match.
+    const updated = await this.em.nativeUpdate(
+      Event,
+      {
+        id: event.id,
+        $or: [{ finalizedSlot: null }, { finalizedSlot: slot.id }],
+      },
+      { finalizedSlot: slot.id },
+    );
+    if (updated === 0) {
+      throw new ProblemException(
+        EVENT_FINALIZED,
+        'The organizer already picked another time',
+      );
+    }
+  }
+
+  private async findSlot(slug: string, slotId: string): Promise<TimeSlot> {
+    const slot = await this.em.findOne(
+      TimeSlot,
+      { id: slotId, event: { slug } },
+      { populate: ['event'] },
+    );
     if (!slot) {
       throw new ProblemException(SLOT_NOT_FOUND, 'This event has no such slot');
     }
-    await this.em.upsert(Vote, { slot, voter, choice });
+    return slot;
   }
 }

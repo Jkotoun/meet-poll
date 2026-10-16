@@ -23,6 +23,23 @@
           "enumItems": [],
           "mappedType": "datetime"
         },
+        "finalized_slot_id": {
+          "name": "finalized_slot_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
         "id": {
           "name": "id",
           "type": "uuid",
@@ -111,6 +128,14 @@
       },
       "indexes": [
         {
+          "columnNames": ["finalized_slot_id"],
+          "composite": false,
+          "constraint": false,
+          "keyName": "events_finalized_slot_id_index",
+          "primary": false,
+          "unique": false
+        },
+        {
           "columnNames": ["organizer_id"],
           "composite": false,
           "constraint": false,
@@ -138,6 +163,14 @@
       "checks": [],
       "triggers": [],
       "foreignKeys": {
+        "events_finalized_slot_id_foreign": {
+          "columnNames": ["finalized_slot_id"],
+          "constraintName": "events_finalized_slot_id_foreign",
+          "localTableName": "public.events",
+          "referencedColumnNames": ["id"],
+          "referencedTableName": "public.time_slots",
+          "deleteRule": "set null"
+        },
         "events_organizer_id_foreign": {
           "columnNames": ["organizer_id"],
           "constraintName": "events_organizer_id_foreign",

@@ -6,7 +6,7 @@ NestJS API, run with Bun. See the root README for running the whole stack.
 
 Plain NestJS feature modules, as in the Nest docs: each feature folder holds
 its module, controller, service, DTOs (`dto/`) and MikroORM entities
-(`entities/`, defined with `defineEntity`). Services use the `EntityManager`
+(`entities/`, decorated classes). Services use the `EntityManager`
 directly. Shared ORM setup lives in `src/database/`.
 
 ```
@@ -16,7 +16,7 @@ src/
   http-errors/   # problem+json filter, ProblemException, validation pipe
   users/         # User + Identity entities, UsersService
   auth/          # register/login/logout/me, session cookie, SessionGuard
-  events/        # Event, TimeSlot and Vote entities; events and voting endpoints
+  events/        # Event, TimeSlot and Vote entities; events, voting, ranking, finalize
   common/        # small shared helpers (DTO transforms)
 ```
 
