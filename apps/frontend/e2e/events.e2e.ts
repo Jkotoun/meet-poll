@@ -34,8 +34,9 @@ test('creates an event and lists it under my events', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 2 })).toHaveText([
     'Monday, 2 November 2026',
     'Tuesday, 3 November 2026',
+    'Pick the final time',
   ]);
-  await expect(page.getByText('11:30 – 12:30')).toBeVisible();
+  await expect(page.getByText('11:30 – 12:30', { exact: true })).toBeVisible();
 
   await page.goto('/events');
   await page.getByRole('link', { name: 'Team lunch' }).click();

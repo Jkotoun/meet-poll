@@ -1,5 +1,6 @@
 'use client';
 
+import Chip from '@mui/material/Chip';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
@@ -25,6 +26,9 @@ export function EventList({ events }: EventListProps) {
             divider
           >
             <ListItemText primary={event.title} />
+            {event.finalized && (
+              <Chip label="Finalized" color="success" size="small" />
+            )}
           </ListItemButton>
         ))}
       </List>

@@ -16,16 +16,23 @@ export function groupByDay<T extends TimeRange>(
   slots: T[],
   timeZone: string,
 ): Day<T>[] {
-  const dayFormat = new Intl.DateTimeFormat(LOCALE, {
-    timeZone,
-    dateStyle: 'full',
-  });
   const days = new Map<string, T[]>();
   for (const slot of slots) {
-    const label = dayFormat.format(new Date(slot.startsAt));
+    const label = formatDay(slot, timeZone);
     days.set(label, [...(days.get(label) ?? []), slot]);
   }
   return [...days].map(([label, daySlots]) => ({ label, slots: daySlots }));
+}
+
+function formatDay(slot: TimeRange, timeZone: string): string {
+  return new Intl.DateTimeFormat(LOCALE, {
+    timeZone,
+    dateStyle: 'full',
+  }).format(new Date(slot.startsAt));
+}
+
+export function formatSlot(slot: TimeRange, timeZone: string): string {
+  return `${formatDay(slot, timeZone)}, ${formatTimeRange(slot, timeZone)}`;
 }
 
 // Not `formatRange`: its separator differs between ICU builds (macOS vs Linux).

@@ -41,6 +41,8 @@ proxy and navigate on success. Slot times are entered in the browser's time
 zone, which becomes the event's, and shown grouped by day in that zone with
 a fixed locale, so server and browser render the same text. A vote is saved
 on click (shown optimistically), then `router.refresh()` reloads the tallies.
+The organizer picks the final time from a ranked list (ranks come from the
+backend); after that the page shows the final time and voting is disabled.
 
 ## Tests
 

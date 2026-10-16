@@ -508,6 +508,172 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemBaseDto"
+                    },
+                    {
+                      "type": "object",
+                      "required": ["type"],
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": ["/problems/event-finalized"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error (RFC 9457 problem details)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "tags": ["events"]
+      }
+    },
+    "/v1/events/{slug}/finalize": {
+      "post": {
+        "operationId": "Events_finalize",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinalizeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Finalized, or already on this slot"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemBaseDto"
+                    },
+                    {
+                      "type": "object",
+                      "required": ["type"],
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": ["/problems/unauthenticated"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemBaseDto"
+                    },
+                    {
+                      "type": "object",
+                      "required": ["type"],
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": ["/problems/not-organizer"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemBaseDto"
+                    },
+                    {
+                      "type": "object",
+                      "required": ["type"],
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": ["/problems/slot-not-found"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ProblemBaseDto"
+                    },
+                    {
+                      "type": "object",
+                      "required": ["type"],
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": ["/problems/event-finalized"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
           "default": {
             "description": "Error (RFC 9457 problem details)",
             "content": {
@@ -721,6 +887,11 @@
                 "$ref": "#/components/schemas/VoteChoice"
               }
             ]
+          },
+          "rank": {
+            "type": "number",
+            "description": "Position by how many can attend, then by yes votes; ties share a rank",
+            "example": 1
           }
         },
         "required": [
@@ -730,7 +901,8 @@
           "yes",
           "ifNeedBe",
           "no",
-          "myChoice"
+          "myChoice",
+          "rank"
         ]
       },
       "EventDto": {
@@ -759,6 +931,11 @@
             "items": {
               "$ref": "#/components/schemas/TimeSlotDto"
             }
+          },
+          "finalizedSlotId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
         "required": [
@@ -767,7 +944,8 @@
           "timezone",
           "createdAt",
           "organizer",
-          "slots"
+          "slots",
+          "finalizedSlotId"
         ]
       },
       "EventSummaryDto": {
@@ -783,9 +961,12 @@
           "createdAt": {
             "format": "date-time",
             "type": "string"
+          },
+          "finalized": {
+            "type": "boolean"
           }
         },
-        "required": ["slug", "title", "createdAt"]
+        "required": ["slug", "title", "createdAt", "finalized"]
       },
       "VoteDto": {
         "type": "object",
@@ -799,6 +980,16 @@
           }
         },
         "required": ["choice"]
+      },
+      "FinalizeDto": {
+        "type": "object",
+        "properties": {
+          "slotId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["slotId"]
       },
       "HealthStatus": {
         "type": "string",

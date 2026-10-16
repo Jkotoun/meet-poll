@@ -22,6 +22,7 @@ interface VoteControlProps {
   slotId: string;
   choice: VoteChoice | null;
   slotLabel: string;
+  closed: boolean;
 }
 
 export function VoteControl({
@@ -29,6 +30,7 @@ export function VoteControl({
   slotId,
   choice,
   slotLabel,
+  closed,
 }: VoteControlProps) {
   const router = useRouter();
   const [shownChoice, showChoice] = useOptimistic(choice);
@@ -52,6 +54,8 @@ export function VoteControl({
         router.refresh();
       } catch {
         setFailed(true);
+        // The event may have been finalized meanwhile; show its current state.
+        router.refresh();
       }
     });
   }
@@ -62,6 +66,7 @@ export function VoteControl({
         exclusive
         size="small"
         color="primary"
+        disabled={closed}
         value={shownChoice}
         aria-label={`Your vote for ${slotLabel}`}
         onChange={(_event, next: VoteChoice | null) => {

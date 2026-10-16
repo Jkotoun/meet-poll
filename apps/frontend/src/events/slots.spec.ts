@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { formatTimeRange, groupByDay, toSlot } from './slots';
+import { formatSlot, formatTimeRange, groupByDay, toSlot } from './slots';
 
 const slot = (id: string, startsAt: string, endsAt: string) => ({
   id,
@@ -32,6 +32,17 @@ describe('formatTimeRange', () => {
     );
 
     expect(range).toBe('09:00 – 10:30');
+  });
+});
+
+describe('formatSlot', () => {
+  it('names the day and the time range', () => {
+    const label = formatSlot(
+      slot('a', '2026-11-02T08:00:00.000Z', '2026-11-02T09:30:00.000Z'),
+      'Europe/Prague',
+    );
+
+    expect(label).toBe('Monday, 2 November 2026, 09:00 – 10:30');
   });
 });
 

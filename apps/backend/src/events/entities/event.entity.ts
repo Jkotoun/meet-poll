@@ -21,6 +21,8 @@ export const Event = defineEntity({
     timezone: p.string().length(64),
     organizer: () => p.manyToOne(User).deleteRule('cascade').index(),
     createdAt: p.datetime().onCreate(() => new Date()),
+    finalizedSlot: () =>
+      p.manyToOne(TimeSlot).nullable().deleteRule('set null').index(),
     slots: () =>
       p.oneToMany(TimeSlot).mappedBy('event').orderBy({ startsAt: 'asc' }),
   },
