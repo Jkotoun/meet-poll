@@ -23,7 +23,8 @@
     "test:e2e": "bun test --parallel test",
     "migration:create": "bun --env-file=.env --bun mikro-orm migration:create",
     "migration:up": "bun --env-file=.env --bun mikro-orm migration:up",
-    "migration:down": "bun --env-file=.env --bun mikro-orm migration:down"
+    "migration:down": "bun --env-file=.env --bun mikro-orm migration:down",
+    "migration:check": "bun --env-file=.env --bun mikro-orm migration:check"
   },
   "dependencies": {
     "@mikro-orm/core": "^7.2.5",

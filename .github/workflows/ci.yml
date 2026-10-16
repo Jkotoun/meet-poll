@@ -46,6 +46,14 @@ jobs:
         run: |
           bun run --filter backend openapi:generate
           git diff --exit-code apps/backend/openapi.json
+      - name: 🗃️ Check migrations match the entities
+        working-directory: apps/backend
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://meetpoll:meetpoll@localhost:5432/meetpoll
+        run: |
+          bun run migration:up
+          bun run migration:check
       - name: 💾 Restore Turbo cache
         uses: actions/cache@v6
         with:
