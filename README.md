@@ -4,8 +4,6 @@ A Doodle-style scheduling-poll app: an organizer proposes candidate meeting
 times, invitees vote **Yes / No / If-need-be** on each one, and the app
 surfaces the slot where the most people can attend.
 
-Live: <https://meet-poll-frontend-kwemjs3vna-ew.a.run.app>
-
 ## How it works
 
 1. Sign up (email + password) and create an event: a title and a few
